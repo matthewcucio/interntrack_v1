@@ -1,161 +1,463 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>InternTrack — Designblue Philippines Inc.</title>
+  <title>InternTrack — Track Every Hour of Your Hustle</title>
+  <meta name="description" content="The ultimate internship hour tracker built for Filipino students. Log your time, mark leaves, and monitor your OJT progress — all for free." />
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="landing.css" />
+
+  <!-- Firebase SDK (only needed for auth — no database) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
 </head>
 <body>
 
-<div class="bg-animated"></div>
+<!-- =====================================================
+     NAVBAR
+===================================================== -->
+<nav class="land-nav" id="land-nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-badge">IT</div>
+      InternTrack
+    </a>
 
-<!-- App Shell -->
-<div id="app" class="relative z-10 min-h-screen flex flex-col">
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#get-started" class="nav-cta">Get Started →</a></li>
+    </ul>
 
-  <!-- Navbar -->
-  <nav class="sticky top-0 z-50 border-b border-[#1e3a5f] bg-[#060E1E]/90 backdrop-blur-md">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] flex items-center justify-center font-black text-sm">IT</div>
-        <span class="font-bold text-white text-lg">InternTrack</span>
-      </div>
-      <div class="flex items-center gap-1">
-        <button class="nav-link" id="nav-dashboard" onclick="showView('dashboard')">Dashboard</button>
-        <button class="nav-link" id="nav-calendar"  onclick="showView('calendar')">Calendar</button>
-        <button class="nav-link" id="nav-settings"  onclick="showView('settings')">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </button>
-      </div>
+    <div class="nav-hamburger" onclick="toggleMobileMenu()">
+      <span></span><span></span><span></span>
     </div>
-  </nav>
-
-  <!-- Main Content -->
-  <main class="flex-1 max-w-6xl mx-auto px-4 py-6 w-full">
-    <div id="view-dashboard" class="view hidden"></div>
-    <div id="view-calendar"  class="view hidden"></div>
-    <div id="view-settings"  class="view hidden"></div>
-  </main>
-
-</div>
-
-<!-- Onboarding Modal -->
-<div id="modal-onboarding" class="modal-backdrop hidden">
-  <div class="modal-box p-8">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] flex items-center justify-center font-black">IT</div>
-      <div>
-        <h2 class="text-xl font-bold text-white">Welcome to InternTrack</h2>
-        <p class="text-[#94A3B8] text-sm">Let's set up your internship profile</p>
-      </div>
-    </div>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Company Name</label>
-        <input id="ob-company" class="input-field" type="text" value="Designblue Philippines Inc." placeholder="Your company name" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Total Required Internship Hours</label>
-        <input id="ob-hours" class="input-field" type="number" placeholder="e.g. 486" min="1" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Internship Start Date</label>
-        <input id="ob-start" class="input-field" type="date" />
-      </div>
-    </div>
-    <div class="mt-6 flex gap-3">
-      <button class="btn-primary flex-1 text-sm py-3" onclick="saveOnboarding()">Save &amp; Start Tracking</button>
-    </div>
-    <p class="text-center text-xs text-[#475569] mt-3">All data is stored locally on your device</p>
   </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#features"     onclick="closeMobileMenu()">Features</a>
+  <a href="#how-it-works" onclick="closeMobileMenu()">How It Works</a>
+  <a href="#get-started"  onclick="closeMobileMenu()" style="color:#FF6B00;font-weight:800">Get Started →</a>
 </div>
 
-<!-- Day Log Modal -->
-<div id="modal-daylog" class="modal-backdrop hidden" onclick="closeDayLogOutside(event)">
-  <div class="modal-box p-6" id="daylog-box">
+<!-- =====================================================
+     HERO
+===================================================== -->
+<section class="hero" id="hero">
+  <div class="hero-blob hero-blob-1"></div>
+  <div class="hero-blob hero-blob-2"></div>
+  <div class="hero-blob hero-blob-3"></div>
 
-    <!-- Header -->
-    <div class="flex items-start justify-between mb-4">
-      <div>
-        <h3 class="text-lg font-bold text-white" id="daylog-title"></h3>
-        <p class="text-[#94A3B8] text-sm" id="daylog-subtitle"></p>
+  <div class="hero-inner">
+    <!-- Left: Text -->
+    <div class="hero-text">
+      <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        Built for Designblue Philippines Inc. interns
       </div>
-      <button onclick="closeDayLog()" class="text-[#475569] hover:text-white transition-colors p-1">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      <h1 class="hero-headline">
+        Track every hour<br/>of your <span class="accent">hustle</span>
+      </h1>
+      <p class="hero-sub">
+        The internship hour tracker made for Filipino OJT students. Log your daily time in/out, mark holidays and leaves, and watch your progress grow — stored right on your device.
+      </p>
+      <div class="hero-actions">
+        <a href="#get-started" class="btn-hero-primary">
+          Start Tracking Free
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </a>
+        <a href="#how-it-works" class="btn-hero-secondary">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          See How It Works
+        </a>
+      </div>
+    </div>
+
+    <!-- Right: Phone mockup -->
+    <div class="phone-wrap">
+      <div class="phone-glow"></div>
+      <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-scanline"></div>
+        <div class="phone-screen">
+
+          <!-- App header -->
+          <div class="ps-header">
+            <div class="ps-logo">IT</div>
+            <span class="ps-title">InternTrack</span>
+            <span class="ps-subtitle">Dashboard</span>
+          </div>
+
+          <!-- Progress ring -->
+          <div class="ps-ring-wrap">
+            <svg width="90" height="90" viewBox="0 0 90 90">
+              <circle cx="45" cy="45" r="36" fill="none" stroke="#1e3a5f" stroke-width="7"/>
+              <circle cx="45" cy="45" r="36" fill="none" stroke="#FF6B00" stroke-width="7"
+                stroke-dasharray="226.2" stroke-dashoffset="119.9"
+                stroke-linecap="round"
+                transform="rotate(-90 45 45)"
+                style="filter:drop-shadow(0 0 6px #FF6B00)"
+              />
+            </svg>
+            <div class="ps-ring-center">
+              <span class="ps-pct">47%</span>
+              <span class="ps-pct-lbl">complete</span>
+            </div>
+          </div>
+
+          <!-- Stats row -->
+          <div class="ps-stats">
+            <div class="ps-stat">
+              <span class="ps-stat-n">486</span>
+              <span class="ps-stat-l">Required</span>
+            </div>
+            <div class="ps-stat">
+              <span class="ps-stat-n g">229</span>
+              <span class="ps-stat-l">Rendered</span>
+            </div>
+            <div class="ps-stat">
+              <span class="ps-stat-n o">257</span>
+              <span class="ps-stat-l">Remaining</span>
+            </div>
+          </div>
+
+          <!-- Recent activity -->
+          <span class="ps-activity-label">Recent Activity</span>
+
+          <div class="ps-activity-item">
+            <span class="ps-activity-day">Mon, Mar 16</span>
+            <span class="ps-badge green">8 hrs</span>
+          </div>
+          <div class="ps-activity-item">
+            <span class="ps-activity-day">Fri, Mar 14</span>
+            <span class="ps-badge green">7.5 hrs</span>
+          </div>
+          <div class="ps-activity-item">
+            <span class="ps-activity-day">Thu, Mar 13</span>
+            <span class="ps-badge yellow">Leave</span>
+          </div>
+          <div class="ps-activity-item">
+            <span class="ps-activity-day">Apr 9, 2026</span>
+            <span class="ps-badge orange">Holiday</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     STATS
+===================================================== -->
+<section class="stats-section">
+  <div class="section-inner">
+    <p class="stats-label">Everything you need, nothing you don't</p>
+    <div class="stats-grid">
+      <div class="stat-card reveal">
+        <div class="stat-number" data-count="486" data-suffix="">486</div>
+        <div class="stat-desc">Hours — typical OJT requirement, configurable to yours</div>
+      </div>
+      <div class="stat-card reveal reveal-delay-1">
+        <div class="stat-number" data-count="33" data-suffix="+">33+</div>
+        <div class="stat-desc">Philippine public holidays pre-loaded for 2025 &amp; 2026</div>
+      </div>
+      <div class="stat-card reveal reveal-delay-2">
+        <div class="stat-number">0</div>
+        <div class="stat-desc">Signups required — just open and start logging</div>
+      </div>
+      <div class="stat-card reveal reveal-delay-3">
+        <div class="stat-number">100%</div>
+        <div class="stat-desc">Free forever — no subscriptions, no hidden fees</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     FEATURES
+===================================================== -->
+<section class="features-section" id="features">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-tag">Features</div>
+      <h2 class="section-title">Everything you need<br/>to log your internship</h2>
+      <p class="section-sub">Three powerful tools that do the math so you can focus on the work.</p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Feature 1 -->
+      <div class="feature-card reveal">
+        <div class="feature-img-wrap">
+          <img
+            src="https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=600&q=80"
+            alt="Laptop on desk — time logging"
+            loading="lazy"
+          />
+        </div>
+        <div class="feature-body">
+          <div class="feature-icon">⏱</div>
+          <h3 class="feature-title">Smart Time Logging</h3>
+          <p class="feature-desc">Pick your time in and time out. Toggle lunch break deduction on or off. Hours are calculated automatically — no spreadsheet needed.</p>
+        </div>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-img-wrap">
+          <img
+            src="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=600&q=80"
+            alt="Planner and phone — calendar planning"
+            loading="lazy"
+          />
+        </div>
+        <div class="feature-body">
+          <div class="feature-icon">📅</div>
+          <h3 class="feature-title">Philippine Holiday Calendar</h3>
+          <p class="feature-desc">2025 and 2026 PH public and special non-working holidays are pre-loaded. Regular and special holidays are highlighted automatically.</p>
+        </div>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-img-wrap">
+          <img
+            src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80"
+            alt="Analytics dashboard on screen"
+            loading="lazy"
+          />
+        </div>
+        <div class="feature-body">
+          <div class="feature-icon">📊</div>
+          <h3 class="feature-title">Live Progress Dashboard</h3>
+          <p class="feature-desc">A glowing progress ring shows exactly how far you've come. See rendered vs. remaining hours, days logged, leave days, and average daily hours.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     HOW IT WORKS
+===================================================== -->
+<section class="how-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="how-grid">
+
+      <!-- Steps -->
+      <div>
+        <div class="section-header" style="text-align:left;margin-bottom:48px">
+          <div class="section-tag reveal">How It Works</div>
+          <h2 class="section-title reveal">3 steps to never miss an hour</h2>
+          <p class="section-sub reveal" style="max-width:none">Takes under a minute to set up. Then just log daily — that's it.</p>
+        </div>
+
+        <div class="how-steps">
+          <div class="how-step reveal">
+            <div class="how-step-num">1</div>
+            <div class="how-step-content">
+              <h4 class="how-step-title">Set Up Your Profile</h4>
+              <p class="how-step-desc">Enter your required OJT hours, company name, and start date. Takes 30 seconds, saves forever.</p>
+            </div>
+          </div>
+          <div class="how-step reveal reveal-delay-1">
+            <div class="how-step-num">2</div>
+            <div class="how-step-content">
+              <h4 class="how-step-title">Log Your Daily Hours</h4>
+              <p class="how-step-desc">Click any date on the calendar. Enter time in/out, toggle lunch break. Mark leaves or holidays with one tap.</p>
+            </div>
+          </div>
+          <div class="how-step reveal reveal-delay-2">
+            <div class="how-step-num">3</div>
+            <div class="how-step-content">
+              <h4 class="how-step-title">Watch Your Progress Grow</h4>
+              <p class="how-step-desc">Your progress ring fills up as you log. Track remaining hours until your internship is officially complete.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual -->
+      <div class="how-visual reveal">
+        <div class="how-visual-img">
+          <img
+            src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=700&q=80"
+            alt="Team working on laptops in a modern office"
+            loading="lazy"
+          />
+        </div>
+        <div class="how-visual-badge">
+          <strong>486 hrs</strong>
+          <span>tracked, not guessed</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     BUILT FOR INTERNS
+===================================================== -->
+<section class="interns-section">
+  <div class="section-inner">
+    <div class="interns-grid">
+
+      <!-- Image -->
+      <div class="interns-img-wrap reveal">
+        <div class="interns-img">
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80"
+            alt="Group of interns working together on laptops"
+            loading="lazy"
+          />
+        </div>
+        <div class="interns-img-overlay"></div>
+        <div class="interns-float-card">
+          <div class="float-pct">✓ Done</div>
+          <div class="float-label">OJT hours complete</div>
+        </div>
+      </div>
+
+      <!-- Text -->
+      <div class="interns-text reveal reveal-delay-1">
+        <div class="section-tag" style="margin-bottom:20px">Built for You</div>
+        <h2 class="interns-quote">
+          Your internship story,<br/>
+          <span class="highlight">tracked to the minute.</span>
+        </h2>
+        <p class="interns-desc">
+          We built InternTrack specifically for OJT students at Designblue Philippines Inc. No bloated apps, no subscriptions — just a clean, fast tool that lives in your browser and keeps your data private on your device.
+        </p>
+        <div class="interns-pills">
+          <span class="interns-pill">🇵🇭 PH Holidays Included</span>
+          <span class="interns-pill">🔒 Private &amp; Local</span>
+          <span class="interns-pill">📱 Mobile Friendly</span>
+          <span class="interns-pill">🌙 Dark Mode</span>
+          <span class="interns-pill">⚡ No Install Needed</span>
+          <span class="interns-pill">☁️ Cloud Sync with Login</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     AUTH / GET STARTED
+===================================================== -->
+<section class="auth-section" id="get-started">
+  <div class="section-inner" style="text-align:center;margin-bottom:48px">
+    <div class="section-tag reveal">Get Started</div>
+    <h2 class="section-title reveal">Your internship journey<br/>starts here</h2>
+    <p class="section-sub reveal">Sign in to keep your progress synced across devices. Or jump straight in — no account needed.</p>
+  </div>
+
+  <div class="auth-section-inner">
+    <div class="auth-card reveal">
+      <!-- Setup warning if Firebase not configured -->
+      <div class="setup-warning" id="setup-warning">
+        <strong>⚠️ Firebase not set up yet.</strong> You can still use InternTrack without login — your data will be saved locally. To enable Google/email sign-in, fill in <code>firebase-config.js</code> with your Firebase project details.
+        <br/><br/>
+        <a href="app.html" style="color:#fbbf24;font-weight:700;text-decoration:underline">Continue without login →</a>
+      </div>
+
+      <div class="auth-card-header">
+        <div class="auth-card-logo">IT</div>
+        <h3 class="auth-card-title" id="auth-title">Welcome back</h3>
+        <p class="auth-card-sub" id="auth-sub">Sign in to continue tracking</p>
+      </div>
+
+      <!-- Google Sign In -->
+      <button class="btn-google" id="btn-google" onclick="signInWithGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
         </svg>
+        Continue with Google
       </button>
-    </div>
 
-    <!-- Holiday notice -->
-    <div id="daylog-holiday-notice" class="hidden mb-4 p-3 rounded-lg bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-sm text-[#FF6B00] flex items-center gap-2">
-      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>
-      <span id="daylog-holiday-name"></span>
-    </div>
+      <div class="auth-divider">or</div>
 
-    <!-- Toggles -->
-    <div class="space-y-3 mb-5">
-      <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
-        <div>
-          <p class="text-sm font-medium text-white">Mark as Leave</p>
-          <p class="text-xs text-[#475569]">Day off / vacation / sick leave</p>
+      <!-- Email form -->
+      <form class="auth-form" id="auth-form">
+        <!-- Name (signup only) -->
+        <div id="name-field" style="display:none">
+          <input id="auth-name" class="auth-input" type="text" placeholder="Full name" autocomplete="name" />
         </div>
-        <button class="toggle-btn" id="toggle-leave" onclick="toggleLeave()"></button>
+        <input id="auth-email"    class="auth-input" type="email"    placeholder="Email address"  autocomplete="email"    required />
+        <input id="auth-password" class="auth-input" type="password" placeholder="Password"       autocomplete="current-password" required />
+        <div class="auth-error" id="auth-error"></div>
+        <button type="submit" class="btn-auth-primary" id="auth-submit-btn">Sign In</button>
+      </form>
+
+      <div class="auth-toggle">
+        <span id="auth-toggle-text">Don't have an account? </span>
+        <button class="auth-toggle-btn" id="auth-toggle-action" onclick="toggleAuthMode()">Sign up</button>
       </div>
-      <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
-        <div>
-          <p class="text-sm font-medium text-white">Mark as Holiday</p>
-          <p class="text-xs text-[#475569]">Override: mark as non-working holiday</p>
-        </div>
-        <button class="toggle-btn" id="toggle-holiday" onclick="toggleHoliday()"></button>
-      </div>
+
+      <p class="auth-note">
+        No database required. Your internship data is stored locally on your device.<br/>
+        Login only syncs your session across devices.
+      </p>
     </div>
 
-    <!-- Time logging -->
-    <div id="daylog-timesection">
-      <div class="border-t border-[#1e3a5f] pt-4 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Time In</label>
-            <input id="dl-timein" class="input-field text-sm" type="time" onchange="calcHours()" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Time Out</label>
-            <input id="dl-timeout" class="input-field text-sm" type="time" onchange="calcHours()" />
-          </div>
-        </div>
-        <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
-          <div>
-            <p class="text-sm font-medium text-white">Lunch Break</p>
-            <p class="text-xs text-[#475569]">Toggle on to include break in hours (no deduction)</p>
-          </div>
-          <button class="toggle-btn" id="toggle-lunch" onclick="toggleLunch()"></button>
-        </div>
-        <div id="hours-display" class="p-3 rounded-lg bg-[#060E1E] border border-[#1e3a5f] text-center">
-          <p class="text-xs text-[#475569] mb-0.5">Hours Rendered</p>
-          <p class="text-2xl font-bold text-[#22C55E]" id="hours-value">—</p>
-        </div>
-      </div>
+    <!-- Skip auth link -->
+    <div style="text-align:center;margin-top:20px">
+      <a href="app.html" style="font-size:0.85rem;color:rgba(255,255,255,0.35);text-decoration:underline;text-underline-offset:3px;">
+        Skip login — open the app directly
+      </a>
     </div>
-
-    <!-- Actions -->
-    <div class="flex gap-3 mt-5">
-      <button class="btn-primary flex-1 text-sm py-2.5" onclick="saveDayLog()">Save Log</button>
-      <button class="btn-danger text-sm py-2.5 px-4"    onclick="clearDayLog()">Clear</button>
-    </div>
-
   </div>
-</div>
+</section>
 
-<script src="app.js"></script>
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+<footer class="land-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <div class="footer-logo-badge">IT</div>
+        InternTrack
+      </div>
+      <p class="footer-tagline">
+        The internship hour tracker built for Filipino OJT students. Powered by your hustle at Designblue Philippines Inc.
+      </p>
+    </div>
+
+    <div>
+      <p class="footer-col-title">App</p>
+      <div class="footer-links">
+        <a href="app.html">Open Tracker</a>
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#get-started">Sign In / Sign Up</a>
+      </div>
+    </div>
+
+    <div>
+      <p class="footer-col-title">Info</p>
+      <div class="footer-links">
+        <a href="app.html#settings">Settings</a>
+        <a href="#get-started">Reset Data</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p class="footer-copy">© 2026 InternTrack. All data stored locally on your device.</p>
+    <p class="footer-ph">🇵🇭 Made for Designblue Philippines Inc. interns</p>
+  </div>
+</footer>
+
+<script src="landing.js"></script>
 </body>
 </html>

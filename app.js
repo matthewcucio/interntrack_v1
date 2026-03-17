@@ -1,7 +1,50 @@
 // =====================================================
+// AUTH GUARD
+// =====================================================
+// currentUser is set by the auth listener below before the app inits.
+// STORE_KEY is scoped per user so each account has its own data.
+let currentUser = null;
+let STORE_KEY    = 'interntrack_data'; // overwritten once user is known
+
+function signOutUser() {
+  if (FIREBASE_CONFIGURED) {
+    firebase.auth().signOut().then(() => { window.location.href = 'index.html'; });
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+
+function initApp() {
+  // Show user info in navbar if logged in
+  if (currentUser) {
+    const userInfoEl = document.getElementById('user-info');
+    const avatarEl   = document.getElementById('user-avatar');
+    const emailEl    = document.getElementById('user-email');
+    if (userInfoEl) {
+      userInfoEl.classList.remove('hidden');
+      userInfoEl.classList.add('flex');
+    }
+    if (avatarEl && currentUser.photoURL) {
+      avatarEl.src = currentUser.photoURL;
+      avatarEl.classList.remove('hidden');
+    }
+    if (emailEl) {
+      emailEl.textContent = currentUser.displayName || currentUser.email || '';
+      emailEl.classList.remove('hidden');
+    }
+  }
+  // Hide auth loading overlay
+  const loading = document.getElementById('auth-loading');
+  if (loading) loading.style.display = 'none';
+
+  checkOnboarding();
+  showView('dashboard');
+}
+
+// =====================================================
 // DATA LAYER
 // =====================================================
-const STORE_KEY = 'interntrack_data';
+// STORE_KEY is set dynamically in the init block below
 
 const PH_HOLIDAYS = {
   '2025-01-01': "New Year's Day",
@@ -680,9 +723,25 @@ function confirmReset() {
 }
 
 // =====================================================
-// INIT
+// INIT — Firebase auth guard
 // =====================================================
 window.addEventListener('DOMContentLoaded', () => {
-  checkOnboarding();
-  showView('dashboard');
+  if (FIREBASE_CONFIGURED) {
+    // Wait for Firebase to resolve auth state before showing app
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        STORE_KEY   = `interntrack_data_${user.uid}`;
+      } else {
+        // Not logged in — redirect to landing page
+        window.location.href = 'index.html';
+        return;
+      }
+      initApp();
+    });
+  } else {
+    // Firebase not configured — run in local-only mode, no auth required
+    STORE_KEY = 'interntrack_data';
+    initApp();
+  }
 });

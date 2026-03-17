@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:sweatco.in)",
+      "WebFetch(domain:images.unsplash.com)",
+      "Bash(curl -s https://sweatco.in/)"
+    ]
+  }
+}

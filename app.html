@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InternTrack — Designblue Philippines Inc.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Firebase SDK (auth only — no database needed) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+
+<div class="bg-animated"></div>
+
+<!-- App Shell -->
+<div id="app" class="relative z-10 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 border-b border-[#1e3a5f] bg-[#060E1E]/90 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center gap-3 no-underline">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] flex items-center justify-center font-black text-sm">IT</div>
+        <span class="font-bold text-white text-lg">InternTrack</span>
+      </a>
+
+      <!-- Nav + user -->
+      <div class="flex items-center gap-1">
+        <button class="nav-link" id="nav-dashboard" onclick="showView('dashboard')">Dashboard</button>
+        <button class="nav-link" id="nav-calendar"  onclick="showView('calendar')">Calendar</button>
+        <button class="nav-link" id="nav-settings"  onclick="showView('settings')">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+
+        <!-- User info + sign out (shown when logged in) -->
+        <div id="user-info" class="hidden items-center gap-2 ml-2 pl-2 border-l border-[#1e3a5f]">
+          <img id="user-avatar" class="w-7 h-7 rounded-full object-cover hidden" src="" alt="" />
+          <span id="user-email" class="text-xs text-[#475569] max-w-[120px] truncate hidden md:block"></span>
+          <button onclick="signOutUser()" class="nav-link text-xs px-2 py-1 text-[#475569] hover:text-[#EF4444]" title="Sign out">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Loading overlay (while checking auth) -->
+  <div id="auth-loading" class="fixed inset-0 z-50 bg-[#060E1E] flex flex-col items-center justify-center">
+    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] flex items-center justify-center font-black text-lg mb-4" style="animation:spin 2s linear infinite">IT</div>
+    <p class="text-[#475569] text-sm">Loading...</p>
+  </div>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-6xl mx-auto px-4 py-6 w-full">
+    <div id="view-dashboard" class="view hidden"></div>
+    <div id="view-calendar"  class="view hidden"></div>
+    <div id="view-settings"  class="view hidden"></div>
+  </main>
+
+</div>
+
+<!-- Onboarding Modal -->
+<div id="modal-onboarding" class="modal-backdrop hidden">
+  <div class="modal-box p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] flex items-center justify-center font-black">IT</div>
+      <div>
+        <h2 class="text-xl font-bold text-white">Welcome to InternTrack</h2>
+        <p class="text-[#94A3B8] text-sm">Let's set up your internship profile</p>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Company Name</label>
+        <input id="ob-company" class="input-field" type="text" value="Designblue Philippines Inc." placeholder="Your company name" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Total Required Internship Hours</label>
+        <input id="ob-hours" class="input-field" type="number" placeholder="e.g. 486" min="1" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Internship Start Date</label>
+        <input id="ob-start" class="input-field" type="date" />
+      </div>
+    </div>
+    <div class="mt-6 flex gap-3">
+      <button class="btn-primary flex-1 text-sm py-3" onclick="saveOnboarding()">Save &amp; Start Tracking</button>
+    </div>
+    <p class="text-center text-xs text-[#475569] mt-3">All data is stored locally on your device</p>
+  </div>
+</div>
+
+<!-- Day Log Modal -->
+<div id="modal-daylog" class="modal-backdrop hidden" onclick="closeDayLogOutside(event)">
+  <div class="modal-box p-6" id="daylog-box">
+
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-white" id="daylog-title"></h3>
+        <p class="text-[#94A3B8] text-sm" id="daylog-subtitle"></p>
+      </div>
+      <button onclick="closeDayLog()" class="text-[#475569] hover:text-white transition-colors p-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Holiday notice -->
+    <div id="daylog-holiday-notice" class="hidden mb-4 p-3 rounded-lg bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-sm text-[#FF6B00] flex items-center gap-2">
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span id="daylog-holiday-name"></span>
+    </div>
+
+    <!-- Toggles -->
+    <div class="space-y-3 mb-5">
+      <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
+        <div>
+          <p class="text-sm font-medium text-white">Mark as Leave</p>
+          <p class="text-xs text-[#475569]">Day off / vacation / sick leave</p>
+        </div>
+        <button class="toggle-btn" id="toggle-leave" onclick="toggleLeave()"></button>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
+        <div>
+          <p class="text-sm font-medium text-white">Mark as Holiday</p>
+          <p class="text-xs text-[#475569]">Override: mark as non-working holiday</p>
+        </div>
+        <button class="toggle-btn" id="toggle-holiday" onclick="toggleHoliday()"></button>
+      </div>
+    </div>
+
+    <!-- Time logging -->
+    <div id="daylog-timesection">
+      <div class="border-t border-[#1e3a5f] pt-4 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Time In</label>
+            <input id="dl-timein" class="input-field text-sm" type="time" onchange="calcHours()" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Time Out</label>
+            <input id="dl-timeout" class="input-field text-sm" type="time" onchange="calcHours()" />
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
+          <div>
+            <p class="text-sm font-medium text-white">Lunch Break</p>
+            <p class="text-xs text-[#475569]">Toggle on to include break in hours (no deduction)</p>
+          </div>
+          <button class="toggle-btn" id="toggle-lunch" onclick="toggleLunch()"></button>
+        </div>
+        <div id="hours-display" class="p-3 rounded-lg bg-[#060E1E] border border-[#1e3a5f] text-center">
+          <p class="text-xs text-[#475569] mb-0.5">Hours Rendered</p>
+          <p class="text-2xl font-bold text-[#22C55E]" id="hours-value">—</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-5">
+      <button class="btn-primary flex-1 text-sm py-2.5" onclick="saveDayLog()">Save Log</button>
+      <button class="btn-danger text-sm py-2.5 px-4"    onclick="clearDayLog()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+
+<script src="app.js"></script>
+</body>
+</html>
