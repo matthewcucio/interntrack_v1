@@ -48,14 +48,14 @@
           </svg>
         </button>
 
-        <!-- User info + sign out (shown when logged in) -->
+        <!-- User info — click to open profile modal -->
         <div id="user-info" class="hidden items-center gap-2 ml-2 pl-2 border-l border-[#1e3a5f]">
-          <img id="user-avatar" class="w-7 h-7 rounded-full object-cover hidden" src="" alt="" />
-          <span id="user-email" class="text-xs text-[#475569] max-w-[120px] truncate hidden md:block"></span>
-          <button onclick="signOutUser()" class="nav-link text-xs px-2 py-1 text-[#475569] hover:text-[#EF4444]" title="Sign out">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
+          <button onclick="openProfile()" class="flex items-center gap-2 nav-link px-2 py-1 rounded-lg" title="View profile">
+            <div id="user-avatar-wrap" class="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] text-white text-xs font-bold flex-shrink-0">
+              <img id="user-avatar" class="w-full h-full object-cover hidden" src="" alt="" />
+              <span id="user-initials">?</span>
+            </div>
+            <span id="user-email" class="text-xs text-[#94A3B8] max-w-[120px] truncate hidden md:block"></span>
           </button>
         </div>
       </div>
@@ -181,6 +181,60 @@
       <button class="btn-primary flex-1 text-sm py-2.5" onclick="saveDayLog()">Save Log</button>
       <button class="btn-danger text-sm py-2.5 px-4"    onclick="clearDayLog()">Clear</button>
     </div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="modal-profile" class="modal-backdrop hidden" onclick="closeProfileOutside(event)">
+  <div class="modal-box p-6" id="profile-box" style="max-width:400px">
+
+    <div class="flex items-start justify-between mb-5">
+      <h3 class="text-lg font-bold text-white">Your Profile</h3>
+      <button onclick="closeProfile()" class="text-[#475569] hover:text-white transition-colors p-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Guest notice -->
+    <div id="profile-guest-notice" class="hidden mb-4 p-3 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 text-sm text-[#F59E0B]">
+      You're browsing as a guest. Your data is saved locally but won't follow you to other devices.
+      <a href="index.html" class="block mt-2 font-semibold underline underline-offset-2 hover:text-white transition-colors">Sign in to sync your data →</a>
+    </div>
+
+    <!-- Avatar -->
+    <div class="flex flex-col items-center gap-3 mb-6">
+      <div id="profile-avatar-wrap" class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] text-white text-2xl font-black flex-shrink-0 ring-4 ring-[#FF6B00]/30">
+        <img id="profile-avatar-img" class="w-full h-full object-cover hidden" src="" alt="" />
+        <span id="profile-avatar-initials">?</span>
+      </div>
+      <div class="text-center">
+        <p id="profile-display-name" class="font-semibold text-white"></p>
+        <p id="profile-email-display" class="text-xs text-[#94A3B8] mt-0.5"></p>
+      </div>
+    </div>
+
+    <!-- Edit form (hidden for guests) -->
+    <div id="profile-edit-form">
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Display Name</label>
+          <input id="profile-name-input" class="input-field text-sm" type="text" placeholder="Your name" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Email</label>
+          <input id="profile-email-input" class="input-field text-sm" type="email" disabled style="opacity:0.5;cursor:not-allowed" />
+        </div>
+      </div>
+      <button class="btn-primary w-full py-2.5 text-sm mt-4" onclick="saveProfile()">Save Profile</button>
+    </div>
+
+    <!-- Sign out -->
+    <div class="mt-4 pt-4 border-t border-[#1e3a5f]">
+      <button onclick="signOutUser()" class="btn-danger w-full py-2.5 text-sm">Sign Out</button>
+    </div>
+
   </div>
 </div>
 

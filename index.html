@@ -71,7 +71,7 @@
         Track every hour<br/>of your <span class="accent">hustle</span>
       </h1>
       <p class="hero-sub">
-        The internship hour tracker made for Filipino OJT students. Log your daily time in/out, mark holidays and leaves, and watch your progress grow — stored right on your device.
+        The internship hour tracker for students logging their hours. Track your daily time in/out, mark holidays and leaves, and watch your progress grow — stored right on your device.
       </p>
       <div class="hero-actions">
         <a href="#get-started" class="btn-hero-primary">
@@ -168,7 +168,7 @@
     <div class="stats-grid">
       <div class="stat-card reveal">
         <div class="stat-number" data-count="486" data-suffix="">486</div>
-        <div class="stat-desc">Hours — typical OJT requirement, configurable to yours</div>
+        <div class="stat-desc">Hours — typical internship requirement, fully configurable</div>
       </div>
       <div class="stat-card reveal reveal-delay-1">
         <div class="stat-number" data-count="33" data-suffix="+">33+</div>
@@ -269,7 +269,7 @@
             <div class="how-step-num">1</div>
             <div class="how-step-content">
               <h4 class="how-step-title">Set Up Your Profile</h4>
-              <p class="how-step-desc">Enter your required OJT hours, company name, and start date. Takes 30 seconds, saves forever.</p>
+              <p class="how-step-desc">Enter your required internship hours, company name, and start date. Takes 30 seconds, saves forever.</p>
             </div>
           </div>
           <div class="how-step reveal reveal-delay-1">
@@ -326,7 +326,7 @@
         <div class="interns-img-overlay"></div>
         <div class="interns-float-card">
           <div class="float-pct">✓ Done</div>
-          <div class="float-label">OJT hours complete</div>
+          <div class="float-label">Internship complete</div>
         </div>
       </div>
 
@@ -338,7 +338,7 @@
           <span class="highlight">tracked to the minute.</span>
         </h2>
         <p class="interns-desc">
-          We built InternTrack specifically for OJT students at Designblue Philippines Inc. No bloated apps, no subscriptions — just a clean, fast tool that lives in your browser and keeps your data private on your device.
+          We built InternTrack to help students track every hour of their internship. No bloated apps, no subscriptions — just a clean, fast tool that lives in your browser and keeps your data private on your device.
         </p>
         <div class="interns-pills">
           <span class="interns-pill">🇵🇭 PH Holidays Included</span>
@@ -409,16 +409,16 @@
       </div>
 
       <p class="auth-note">
-        No database required. Your internship data is stored locally on your device.<br/>
-        Login only syncs your session across devices.
+        Your hour logs are saved in your browser's local storage — nothing is sent to a server.<br/>
+        Signing in only identifies you so your data stays yours across sessions.
       </p>
     </div>
 
-    <!-- Skip auth link -->
+    <!-- Skip auth — guest mode -->
     <div style="text-align:center;margin-top:20px">
-      <a href="app.html" style="font-size:0.85rem;color:rgba(255,255,255,0.35);text-decoration:underline;text-underline-offset:3px;">
-        Skip login — open the app directly
-      </a>
+      <button onclick="guestAccess()" style="background:none;border:none;font-size:0.85rem;color:rgba(255,255,255,0.35);cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;">
+        Skip login — browse as guest
+      </button>
     </div>
   </div>
 </section>
@@ -434,7 +434,7 @@
         InternTrack
       </div>
       <p class="footer-tagline">
-        The internship hour tracker built for Filipino OJT students. Powered by your hustle at Designblue Philippines Inc.
+        Track your internship hours. Stay on top of your progress.
       </p>
     </div>
 
@@ -451,15 +451,15 @@
     <div>
       <p class="footer-col-title">Info</p>
       <div class="footer-links">
-        <a href="app.html#settings">Settings</a>
+        <a href="app.html">Settings</a>
         <a href="#get-started">Reset Data</a>
       </div>
     </div>
   </div>
 
   <div class="footer-bottom">
-    <p class="footer-copy">© 2026 InternTrack. All data stored locally on your device.</p>
-    <p class="footer-ph">🇵🇭 Made for Designblue Philippines Inc. interns</p>
+    <p class="footer-copy">© 2026 InternTrack. Your hour logs stay on your device.</p>
+    <p class="footer-ph">🇵🇭 Made in the Philippines</p>
   </div>
 </footer>
 

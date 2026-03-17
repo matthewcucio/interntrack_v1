@@ -113,6 +113,12 @@ function setLoading(loading) {
     : (authMode === 'signup' ? 'Create Account' : 'Sign In');
 }
 
+// Guest access — bypasses Firebase auth, stores under 'guest' key
+function guestAccess() {
+  sessionStorage.setItem('interntrack_guest', '1');
+  window.location.href = 'app.html';
+}
+
 // Google Sign In
 async function signInWithGoogle() {
   if (!FIREBASE_CONFIGURED) {
@@ -193,10 +199,32 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('setup-warning').classList.add('show');
   }
 
-  // If already logged in, go straight to app
+  // If already logged in, update CTA to "Open App" — don't auto-redirect
   if (FIREBASE_CONFIGURED) {
     firebase.auth().onAuthStateChanged(user => {
-      if (user) window.location.href = 'app.html';
+      if (user) {
+        // Swap every "Get Started" CTA to "Open App →"
+        document.querySelectorAll('.nav-cta, .btn-hero-primary').forEach(el => {
+          if (el.tagName === 'A') {
+            el.href = 'app.html';
+            el.textContent = 'Open App →';
+          }
+        });
+        // Hide the auth card, show a direct link instead
+        const authCard = document.querySelector('.auth-card');
+        if (authCard) {
+          authCard.innerHTML = `
+            <div style="text-align:center;padding:20px 0">
+              <img src="IT Logo.png" alt="InternTrack" style="width:56px;height:56px;object-fit:contain;margin:0 auto 16px;display:block"/>
+              <p style="color:#fff;font-weight:700;font-size:1.1rem;margin-bottom:6px">You're signed in</p>
+              <p style="color:rgba(255,255,255,0.45);font-size:0.875rem;margin-bottom:24px">Pick up where you left off.</p>
+              <a href="app.html" style="display:inline-block;background:linear-gradient(135deg,#FF6B00,#FF8C00);color:#fff;font-weight:700;padding:13px 36px;border-radius:10px;text-decoration:none;box-shadow:0 0 20px rgba(255,107,0,0.3)">Open InternTrack →</a>
+              <div style="margin-top:16px">
+                <button onclick="firebase.auth().signOut()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:0.8rem;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:2px">Sign out</button>
+              </div>
+            </div>`;
+        }
+      }
     });
   }
 

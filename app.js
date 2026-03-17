@@ -7,6 +7,11 @@ let currentUser = null;
 let STORE_KEY    = 'interntrack_data'; // overwritten once user is known
 
 function signOutUser() {
+  // Guest mode — just return to landing page
+  if (STORE_KEY === 'interntrack_data_guest') {
+    window.location.href = 'index.html';
+    return;
+  }
   if (FIREBASE_CONFIGURED) {
     firebase.auth().signOut().then(() => { window.location.href = 'index.html'; });
   } else {
@@ -14,31 +19,123 @@ function signOutUser() {
   }
 }
 
-function initApp() {
-  // Show user info in navbar if logged in
+function getInitials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function updateNavbarUser() {
+  const userInfoEl   = document.getElementById('user-info');
+  const avatarEl     = document.getElementById('user-avatar');
+  const initialsEl   = document.getElementById('user-initials');
+  const emailEl      = document.getElementById('user-email');
+
+  if (!userInfoEl) return;
+
+  const isGuest = STORE_KEY === 'interntrack_data_guest';
+
+  if (isGuest) {
+    // Show a generic "guest" indicator
+    userInfoEl.classList.remove('hidden');
+    userInfoEl.classList.add('flex');
+    if (initialsEl) initialsEl.textContent = 'G';
+    if (emailEl) { emailEl.textContent = 'Guest'; emailEl.classList.remove('hidden'); }
+    return;
+  }
+
   if (currentUser) {
-    const userInfoEl = document.getElementById('user-info');
-    const avatarEl   = document.getElementById('user-avatar');
-    const emailEl    = document.getElementById('user-email');
-    if (userInfoEl) {
-      userInfoEl.classList.remove('hidden');
-      userInfoEl.classList.add('flex');
-    }
-    if (avatarEl && currentUser.photoURL) {
+    userInfoEl.classList.remove('hidden');
+    userInfoEl.classList.add('flex');
+
+    if (currentUser.photoURL && avatarEl) {
       avatarEl.src = currentUser.photoURL;
       avatarEl.classList.remove('hidden');
+      if (initialsEl) initialsEl.style.display = 'none';
+    } else if (initialsEl) {
+      initialsEl.textContent = getInitials(currentUser.displayName || currentUser.email);
     }
     if (emailEl) {
       emailEl.textContent = currentUser.displayName || currentUser.email || '';
       emailEl.classList.remove('hidden');
     }
   }
+}
+
+function initApp() {
+  updateNavbarUser();
   // Hide auth loading overlay
   const loading = document.getElementById('auth-loading');
   if (loading) loading.style.display = 'none';
 
   checkOnboarding();
   showView('dashboard');
+}
+
+// =====================================================
+// PROFILE MODAL
+// =====================================================
+function openProfile() {
+  const isGuest = STORE_KEY === 'interntrack_data_guest';
+
+  // Guest notice
+  const guestNotice = document.getElementById('profile-guest-notice');
+  const editForm    = document.getElementById('profile-edit-form');
+  if (guestNotice) guestNotice.classList.toggle('hidden', !isGuest);
+  if (editForm)    editForm.style.display = isGuest ? 'none' : 'block';
+
+  // Avatar
+  const avatarImg      = document.getElementById('profile-avatar-img');
+  const avatarInitials = document.getElementById('profile-avatar-initials');
+  const displayName    = document.getElementById('profile-display-name');
+  const emailDisplay   = document.getElementById('profile-email-display');
+  const nameInput      = document.getElementById('profile-name-input');
+  const emailInput     = document.getElementById('profile-email-input');
+
+  if (isGuest) {
+    if (avatarInitials) avatarInitials.textContent = 'G';
+    if (displayName)    displayName.textContent     = 'Guest User';
+    if (emailDisplay)   emailDisplay.textContent    = 'Not signed in';
+  } else if (currentUser) {
+    if (currentUser.photoURL && avatarImg) {
+      avatarImg.src = currentUser.photoURL;
+      avatarImg.classList.remove('hidden');
+      if (avatarInitials) avatarInitials.style.display = 'none';
+    } else if (avatarInitials) {
+      avatarInitials.textContent = getInitials(currentUser.displayName || currentUser.email);
+    }
+    if (displayName)  displayName.textContent  = currentUser.displayName || 'No name set';
+    if (emailDisplay) emailDisplay.textContent = currentUser.email || '';
+    if (nameInput)    nameInput.value          = currentUser.displayName || '';
+    if (emailInput)   emailInput.value         = currentUser.email || '';
+  }
+
+  document.getElementById('modal-profile').classList.remove('hidden');
+}
+
+function closeProfileOutside(e) {
+  if (e.target.id === 'modal-profile') closeProfile();
+}
+
+function closeProfile() {
+  document.getElementById('modal-profile').classList.add('hidden');
+}
+
+async function saveProfile() {
+  if (!currentUser || !FIREBASE_CONFIGURED) return;
+  const nameInput = document.getElementById('profile-name-input');
+  const name = nameInput ? nameInput.value.trim() : '';
+
+  try {
+    await firebase.auth().currentUser.updateProfile({ displayName: name });
+    currentUser = firebase.auth().currentUser;
+    // Refresh profile modal display and navbar
+    document.getElementById('profile-display-name').textContent = name || 'No name set';
+    updateNavbarUser();
+    closeProfile();
+    showToast('Profile updated!');
+  } catch (err) {
+    showToast('Failed to update profile', 'error');
+  }
 }
 
 // =====================================================
@@ -203,8 +300,7 @@ function checkOnboarding() {
 
 function saveOnboarding() {
   const company =
-    document.getElementById('ob-company').value.trim() ||
-    'Designblue Philippines Inc.';
+    document.getElementById('ob-company').value.trim() || '';
   const hours = parseInt(document.getElementById('ob-hours').value);
   const start = document.getElementById('ob-start').value;
 
@@ -295,7 +391,7 @@ function renderDashboard() {
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
               <span class="text-3xl font-black text-white">${pct.toFixed(0)}%</span>
-              <span class="text-xs text-[#475569]">complete</span>
+              <span class="text-xs text-[#94A3B8]">complete</span>
             </div>
           </div>
 
@@ -303,16 +399,16 @@ function renderDashboard() {
           <div class="flex-1 w-full grid grid-cols-1 gap-4">
             <div class="grid grid-cols-3 gap-3">
               <div class="card p-4 text-center">
-                <p class="text-xs text-[#475569] mb-1">Required</p>
-                <p class="text-xl font-bold text-white">${required}<span class="text-xs text-[#475569]"> hrs</span></p>
+                <p class="text-xs text-[#94A3B8] mb-1">Required</p>
+                <p class="text-xl font-bold text-white">${required}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
               </div>
               <div class="card p-4 text-center border-[#22C55E]/30">
-                <p class="text-xs text-[#475569] mb-1">Rendered</p>
-                <p class="text-xl font-bold text-[#22C55E]">${rendered}<span class="text-xs text-[#475569]"> hrs</span></p>
+                <p class="text-xs text-[#94A3B8] mb-1">Rendered</p>
+                <p class="text-xl font-bold text-[#22C55E]">${rendered}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
               </div>
               <div class="card p-4 text-center ${remaining === 0 ? 'border-[#22C55E]/30' : 'border-[#FF6B00]/30'}">
-                <p class="text-xs text-[#475569] mb-1">Remaining</p>
-                <p class="text-xl font-bold ${remaining === 0 ? 'text-[#22C55E]' : 'text-[#FF6B00]'}">${remaining}<span class="text-xs text-[#475569]"> hrs</span></p>
+                <p class="text-xs text-[#94A3B8] mb-1">Remaining</p>
+                <p class="text-xl font-bold ${remaining === 0 ? 'text-[#22C55E]' : 'text-[#FF6B00]'}">${remaining}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
               </div>
             </div>
             ${remaining === 0 ? `
@@ -327,15 +423,15 @@ function renderDashboard() {
       <div class="grid grid-cols-3 gap-3">
         <div class="card card-hover p-4 text-center" onclick="showView('calendar')">
           <p class="text-2xl font-bold text-white">${loggedDays}</p>
-          <p class="text-xs text-[#475569] mt-1">Days Logged</p>
+          <p class="text-xs text-[#94A3B8] mt-1">Days Logged</p>
         </div>
         <div class="card card-hover p-4 text-center" onclick="showView('calendar')">
           <p class="text-2xl font-bold text-[#F59E0B]">${leaveDays}</p>
-          <p class="text-xs text-[#475569] mt-1">Days on Leave</p>
+          <p class="text-xs text-[#94A3B8] mt-1">Days on Leave</p>
         </div>
         <div class="card p-4 text-center">
           <p class="text-2xl font-bold text-[#94A3B8]">${avgHours}</p>
-          <p class="text-xs text-[#475569] mt-1">Avg Hrs / Day</p>
+          <p class="text-xs text-[#94A3B8] mt-1">Avg Hrs / Day</p>
         </div>
       </div>
 
@@ -680,15 +776,15 @@ function renderSettings() {
 
       <div class="card p-6 space-y-3 border-[#EF4444]/20">
         <h3 class="font-semibold text-[#EF4444] text-sm uppercase tracking-wide">Danger Zone</h3>
-        <p class="text-xs text-[#475569]">
+        <p class="text-xs text-[#94A3B8]">
           This will permanently delete all your logged data and settings. This action cannot be undone.
         </p>
         <button class="btn-danger w-full py-2.5 text-sm" onclick="confirmReset()">Reset All Data</button>
       </div>
 
       <div class="card p-5 text-center">
-        <p class="text-xs text-[#475569]">InternTrack — Built for Designblue Philippines Inc. interns</p>
-        <p class="text-xs text-[#2d4a6e] mt-1">All data stored locally in your browser</p>
+        <p class="text-xs text-[#94A3B8]">InternTrack — Your personal internship hour tracker</p>
+        <p class="text-xs text-[#475569] mt-1">Hour logs are saved locally in your browser</p>
       </div>
     </div>
   `;
@@ -726,6 +822,15 @@ function confirmReset() {
 // INIT — Firebase auth guard
 // =====================================================
 window.addEventListener('DOMContentLoaded', () => {
+  // Guest mode: user clicked "Skip login" on the landing page
+  const isGuest = sessionStorage.getItem('interntrack_guest') === '1';
+  if (isGuest) {
+    sessionStorage.removeItem('interntrack_guest');
+    STORE_KEY = 'interntrack_data_guest';
+    initApp();
+    return;
+  }
+
   if (FIREBASE_CONFIGURED) {
     // Wait for Firebase to resolve auth state before showing app
     firebase.auth().onAuthStateChanged(user => {
@@ -733,7 +838,7 @@ window.addEventListener('DOMContentLoaded', () => {
         currentUser = user;
         STORE_KEY   = `interntrack_data_${user.uid}`;
       } else {
-        // Not logged in — redirect to landing page
+        // Not logged in and not a guest — redirect to landing page
         window.location.href = 'index.html';
         return;
       }
