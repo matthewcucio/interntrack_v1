@@ -351,6 +351,8 @@ function saveOnboarding() {
 // =====================================================
 let currentView = 'dashboard';
 let calYear, calMonth;
+let multiSelectMode = false;
+let selectedDates   = new Set();
 
 function showView(view) {
   currentView = view;
@@ -558,8 +560,24 @@ function renderCalendar() {
           <button class="btn-secondary px-3 py-2 text-sm" onclick="calNav(-1)">‹ Prev</button>
           <button class="btn-secondary px-3 py-2 text-sm" onclick="calNav(0)">Today</button>
           <button class="btn-secondary px-3 py-2 text-sm" onclick="calNav(1)">Next ›</button>
+          <button class="px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${multiSelectMode
+            ? 'bg-[#FF6B00] text-white shadow-[0_0_12px_rgba(255,107,0,0.5)]'
+            : 'btn-secondary'}" onclick="toggleMultiSelect()">
+            ${multiSelectMode ? '✕ Exit Select' : '⊞ Select Days'}
+          </button>
         </div>
       </div>
+
+      ${multiSelectMode ? `
+      <div class="p-3 rounded-lg bg-[#FF6B00]/10 border border-[#FF6B00]/30 text-sm text-[#FF6B00] flex items-center justify-between">
+        <span>Tap days to select. <strong>${selectedDates.size}</strong> day${selectedDates.size !== 1 ? 's' : ''} selected.</span>
+        <div class="flex gap-2">
+          ${selectedDates.size > 0 ? `
+            <button onclick="clearSelection()" class="text-xs text-[#94A3B8] underline underline-offset-2">Clear</button>
+            <button onclick="openBulkLog()" class="btn-primary text-xs px-3 py-1.5">Log Selected →</button>
+          ` : ''}
+        </div>
+      </div>` : ''}
 
       <!-- Legend -->
       <div class="flex flex-wrap gap-3 text-xs text-[#94A3B8]">
@@ -575,6 +593,9 @@ function renderCalendar() {
         <span class="flex items-center gap-1.5">
           <span class="w-3 h-3 rounded border-2 border-[#FF6B00] inline-block"></span>Today
         </span>
+        ${multiSelectMode ? `<span class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded bg-[#FF6B00]/30 border border-[#FF6B00] inline-block"></span>Selected
+        </span>` : ''}
       </div>
 
       <!-- Grid -->
@@ -593,25 +614,31 @@ function renderCalendar() {
             const isLeave = log.isLeave;
             const isLogged = !isLeave && !isHol && log.hoursRendered;
 
+            const isSelected = selectedDates.has(ds);
+
             let cls = 'cal-day bg-[#0A1628]';
-            if (cell.other)  cls += ' other-month';
+            if (cell.other)    cls += ' other-month';
             else if (isToday)  cls += ' today';
             else if (isFuture) cls += ' future-day';
 
             if (!cell.other) {
-              if (isLeave)      cls += ' leave-day';
-              else if (isHol)   cls += ' holiday-day';
-              else if (isLogged) cls += ' logged-day';
+              if (isSelected)        cls += ' selected-day';
+              else if (isLeave)      cls += ' leave-day';
+              else if (isHol)        cls += ' holiday-day';
+              else if (isLogged)     cls += ' logged-day';
             }
 
-            const onClick = cell.other ? '' : `onclick="openDayLog('${ds}')"`;
+            const onClick = cell.other ? '' :
+              multiSelectMode
+                ? `onclick="toggleDateSelection('${ds}')"`
+                : `onclick="openDayLog('${ds}')"`;
 
             return `
               <div class="${cls}" ${onClick}>
                 <span class="text-xs font-bold ${isToday ? 'text-[#FF6B00]' : 'text-[#94A3B8]'} leading-none">${cell.day}</span>
                 ${isPHol && !cell.other  ? `<span class="badge badge-holiday mt-0.5" style="font-size:8px;padding:1px 4px">${isPHol.split(' ')[0]}</span>` : ''}
-                ${isLeave && !cell.other ? `<span class="badge badge-leave mt-0.5" style="font-size:8px;padding:1px 4px">Leave</span>` : ''}
-                ${isLogged && !cell.other ? `<span class="text-[#22C55E] mt-auto" style="font-size:9px;font-weight:700">${log.hoursRendered}h</span>` : ''}
+                ${isLeave && !cell.other && !isSelected ? `<span class="badge badge-leave mt-0.5" style="font-size:8px;padding:1px 4px">Leave</span>` : ''}
+                ${isLogged && !cell.other && !isSelected ? `<span class="text-[#22C55E] mt-auto" style="font-size:9px;font-weight:700">${log.hoursRendered}h</span>` : ''}
               </div>`;
           }).join('')}
         </div>
@@ -631,6 +658,130 @@ function calNav(dir) {
     if (calMonth > 11) { calMonth = 0;  calYear++; }
   }
   renderCalendar();
+}
+
+// =====================================================
+// MULTI-SELECT
+// =====================================================
+function toggleMultiSelect() {
+  multiSelectMode = !multiSelectMode;
+  if (!multiSelectMode) selectedDates.clear();
+  renderCalendar();
+}
+
+function toggleDateSelection(dateStr) {
+  if (selectedDates.has(dateStr)) {
+    selectedDates.delete(dateStr);
+  } else {
+    selectedDates.add(dateStr);
+  }
+  renderCalendar();
+}
+
+function clearSelection() {
+  selectedDates.clear();
+  renderCalendar();
+}
+
+// =====================================================
+// BULK LOG MODAL
+// =====================================================
+let bulkDlState = { isLeave: false, isHoliday: false, lunchIncluded: false };
+
+function openBulkLog() {
+  if (selectedDates.size === 0) return;
+  bulkDlState = { isLeave: false, isHoliday: false, lunchIncluded: false };
+
+  const count = selectedDates.size;
+  document.getElementById('bulklog-title').textContent    = `Log ${count} Day${count !== 1 ? 's' : ''}`;
+  document.getElementById('bulklog-subtitle').textContent = `Same entry applied to all ${count} selected dates`;
+
+  document.getElementById('bl-timein').value  = '';
+  document.getElementById('bl-timeout').value = '';
+  document.getElementById('btoggle-leave').classList.remove('on');
+  document.getElementById('btoggle-holiday').classList.remove('on');
+  document.getElementById('btoggle-lunch').classList.remove('on');
+
+  calcBulkHours();
+  updateBulkTimeSectionVisibility();
+  document.getElementById('modal-bulklog').classList.remove('hidden');
+}
+
+function closeBulkLogOutside(e) {
+  if (e.target.id === 'modal-bulklog') closeBulkLog();
+}
+
+function closeBulkLog() {
+  document.getElementById('modal-bulklog').classList.add('hidden');
+}
+
+function updateBulkTimeSectionVisibility() {
+  const disabled = bulkDlState.isLeave || bulkDlState.isHoliday;
+  const section  = document.getElementById('bulklog-timesection');
+  section.style.opacity       = disabled ? '0.35' : '1';
+  section.style.pointerEvents = disabled ? 'none'  : 'auto';
+}
+
+function toggleBulkLeave() {
+  bulkDlState.isLeave = !bulkDlState.isLeave;
+  document.getElementById('btoggle-leave').classList.toggle('on', bulkDlState.isLeave);
+  updateBulkTimeSectionVisibility();
+}
+
+function toggleBulkHoliday() {
+  bulkDlState.isHoliday = !bulkDlState.isHoliday;
+  document.getElementById('btoggle-holiday').classList.toggle('on', bulkDlState.isHoliday);
+  updateBulkTimeSectionVisibility();
+}
+
+function toggleBulkLunch() {
+  bulkDlState.lunchIncluded = !bulkDlState.lunchIncluded;
+  document.getElementById('btoggle-lunch').classList.toggle('on', bulkDlState.lunchIncluded);
+  calcBulkHours();
+}
+
+function calcBulkHours() {
+  const ti = document.getElementById('bl-timein').value;
+  const to = document.getElementById('bl-timeout').value;
+  const h  = calcHoursFromTimes(ti, to, bulkDlState.lunchIncluded);
+  const el = document.getElementById('bulk-hours-value');
+  if (h === null || h === undefined) {
+    el.textContent = '—'; el.style.color = '#475569';
+  } else {
+    el.textContent = `${h} hrs`; el.style.color = '#22C55E';
+  }
+}
+
+function saveBulkLog() {
+  const ti    = document.getElementById('bl-timein').value;
+  const to    = document.getElementById('bl-timeout').value;
+  const hours = calcHoursFromTimes(ti, to, bulkDlState.lunchIncluded);
+
+  const data = getData();
+  selectedDates.forEach(dateStr => {
+    data.logs[dateStr] = {
+      isLeave:       bulkDlState.isLeave,
+      isHoliday:     bulkDlState.isHoliday,
+      lunchIncluded: bulkDlState.lunchIncluded,
+      timeIn:        ti  || null,
+      timeOut:       to  || null,
+      hoursRendered: (!bulkDlState.isLeave && !bulkDlState.isHoliday && hours != null) ? hours : 0,
+    };
+  });
+  saveData(data);
+
+  const count = selectedDates.size;
+  const msg =
+    bulkDlState.isLeave   ? `Leave marked for ${count} days!` :
+    bulkDlState.isHoliday ? `Holiday marked for ${count} days!` :
+    `Logged ${hours ?? 0} hrs × ${count} days!`;
+  showToast(msg);
+
+  closeBulkLog();
+  multiSelectMode = false;
+  selectedDates.clear();
+  renderCalendar();
+  if (currentView === 'dashboard') renderDashboard();
 }
 
 // =====================================================

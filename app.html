@@ -185,6 +185,71 @@
   </div>
 </div>
 
+<!-- Bulk Log Modal -->
+<div id="modal-bulklog" class="modal-backdrop hidden" onclick="closeBulkLogOutside(event)">
+  <div class="modal-box p-6">
+
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-white" id="bulklog-title">Log Days</h3>
+        <p class="text-[#94A3B8] text-sm" id="bulklog-subtitle"></p>
+      </div>
+      <button onclick="closeBulkLog()" class="text-[#475569] hover:text-white transition-colors p-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Toggles -->
+    <div class="space-y-3 mb-5">
+      <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
+        <div>
+          <p class="text-sm font-medium text-white">Mark as Leave</p>
+          <p class="text-xs text-[#475569]">Day off / vacation / sick leave</p>
+        </div>
+        <button class="toggle-btn" id="btoggle-leave" onclick="toggleBulkLeave()"></button>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
+        <div>
+          <p class="text-sm font-medium text-white">Mark as Holiday</p>
+          <p class="text-xs text-[#475569]">Override: mark as non-working holiday</p>
+        </div>
+        <button class="toggle-btn" id="btoggle-holiday" onclick="toggleBulkHoliday()"></button>
+      </div>
+    </div>
+
+    <!-- Time logging -->
+    <div id="bulklog-timesection">
+      <div class="border-t border-[#1e3a5f] pt-4 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Time In</label>
+            <input id="bl-timein" class="input-field text-sm" type="time" onchange="calcBulkHours()" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Time Out</label>
+            <input id="bl-timeout" class="input-field text-sm" type="time" onchange="calcBulkHours()" />
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-lg bg-[#0A1628] border border-[#1e3a5f]">
+          <div>
+            <p class="text-sm font-medium text-white">Lunch Break</p>
+            <p class="text-xs text-[#475569]">Toggle on to include break in hours (no deduction)</p>
+          </div>
+          <button class="toggle-btn" id="btoggle-lunch" onclick="toggleBulkLunch()"></button>
+        </div>
+        <div class="p-3 rounded-lg bg-[#060E1E] border border-[#1e3a5f] text-center">
+          <p class="text-xs text-[#94A3B8] mb-0.5">Hours per Day</p>
+          <p class="text-2xl font-bold" id="bulk-hours-value" style="color:#475569">—</p>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary w-full py-2.5 text-sm mt-5" onclick="saveBulkLog()">Apply to All Selected Days</button>
+  </div>
+</div>
+
 <!-- Profile Modal -->
 <div id="modal-profile" class="modal-backdrop hidden" onclick="closeProfileOutside(event)">
   <div class="modal-box p-6" id="profile-box" style="max-width:400px">
