@@ -60,6 +60,7 @@ function updateNavbarUser() {
       emailEl.classList.remove('hidden');
     }
   }
+  updateMobileNavAvatar();
 }
 
 async function initApp() {
@@ -416,9 +417,11 @@ function showView(view) {
   ['dashboard', 'calendar', 'settings'].forEach(v => {
     document.getElementById(`view-${v}`).classList.add('hidden');
     document.getElementById(`nav-${v}`)?.classList.remove('active');
+    document.getElementById(`mnav-${v}`)?.classList.remove('active');
   });
   document.getElementById(`view-${view}`).classList.remove('hidden');
   document.getElementById(`nav-${view}`)?.classList.add('active');
+  document.getElementById(`mnav-${view}`)?.classList.add('active');
 
   if (view === 'dashboard') renderDashboard();
   if (view === 'calendar')  renderCalendar();
@@ -458,12 +461,12 @@ function renderDashboard() {
       </div>
 
       <!-- Progress hero card -->
-      <div class="card p-6 md:p-8">
-        <div class="flex flex-col md:flex-row items-center gap-8">
+      <div class="card p-4 md:p-8">
+        <div class="flex flex-col md:flex-row items-center gap-5 md:gap-8">
 
-          <!-- Ring -->
-          <div class="relative flex-shrink-0">
-            <svg width="140" height="140" viewBox="0 0 140 140">
+          <!-- Ring — responsive size -->
+          <div class="relative flex-shrink-0" style="width:clamp(110px,30vw,140px);height:clamp(110px,30vw,140px)">
+            <svg width="100%" height="100%" viewBox="0 0 140 140">
               <circle cx="70" cy="70" r="${r}" fill="none" stroke="#1e3a5f" stroke-width="10"/>
               <circle cx="70" cy="70" r="${r}" fill="none" stroke="#FF6B00" stroke-width="10"
                 class="progress-ring-fill"
@@ -473,55 +476,58 @@ function renderDashboard() {
               />
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span class="text-3xl font-black text-white">${pct.toFixed(0)}%</span>
+              <span class="text-2xl md:text-3xl font-black text-white">${pct.toFixed(0)}%</span>
               <span class="text-xs text-[#94A3B8]">complete</span>
             </div>
           </div>
 
           <!-- Hour stats -->
-          <div class="flex-1 w-full grid grid-cols-1 gap-4">
-            <div class="grid grid-cols-3 gap-3">
-              <div class="card p-4 text-center">
+          <div class="flex-1 w-full grid grid-cols-1 gap-3">
+            <div class="grid grid-cols-3 gap-2">
+              <div class="card p-2 md:p-4 text-center">
                 <p class="text-xs text-[#94A3B8] mb-1">Required</p>
-                <p class="text-xl font-bold text-white">${required}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
+                <p class="text-base md:text-xl font-bold text-white">${required}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
               </div>
-              <div class="card p-4 text-center border-[#22C55E]/30">
+              <div class="card p-2 md:p-4 text-center border-[#22C55E]/30">
                 <p class="text-xs text-[#94A3B8] mb-1">Rendered</p>
-                <p class="text-xl font-bold text-[#22C55E]">${rendered}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
+                <p class="text-base md:text-xl font-bold text-[#22C55E]">${rendered}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
               </div>
-              <div class="card p-4 text-center ${remaining === 0 ? 'border-[#22C55E]/30' : 'border-[#FF6B00]/30'}">
+              <div class="card p-2 md:p-4 text-center ${remaining === 0 ? 'border-[#22C55E]/30' : 'border-[#FF6B00]/30'}">
                 <p class="text-xs text-[#94A3B8] mb-1">Remaining</p>
-                <p class="text-xl font-bold ${remaining === 0 ? 'text-[#22C55E]' : 'text-[#FF6B00]'}">${remaining}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
+                <p class="text-base md:text-xl font-bold ${remaining === 0 ? 'text-[#22C55E]' : 'text-[#FF6B00]'}">${remaining}<span class="text-xs text-[#94A3B8]"> hrs</span></p>
               </div>
             </div>
             ${remaining === 0 ? `
               <div class="p-3 rounded-lg bg-[#22C55E]/10 border border-[#22C55E]/30 text-center text-sm text-[#22C55E] font-semibold">
-                Internship hours complete!
+                Internship hours complete! 🎉
               </div>` : ''}
           </div>
         </div>
       </div>
 
       <!-- Quick stats -->
-      <div class="grid grid-cols-3 gap-3">
-        <div class="card card-hover p-4 text-center" onclick="showView('calendar')">
-          <p class="text-2xl font-bold text-white">${loggedDays}</p>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="card card-hover p-3 md:p-4 text-center" onclick="showView('calendar')">
+          <p class="text-xl md:text-2xl font-bold text-white">${loggedDays}</p>
           <p class="text-xs text-[#94A3B8] mt-1">Days Logged</p>
         </div>
-        <div class="card card-hover p-4 text-center" onclick="showView('calendar')">
-          <p class="text-2xl font-bold text-[#F59E0B]">${leaveDays}</p>
-          <p class="text-xs text-[#94A3B8] mt-1">Days on Leave</p>
+        <div class="card card-hover p-3 md:p-4 text-center" onclick="showView('calendar')">
+          <p class="text-xl md:text-2xl font-bold text-[#F59E0B]">${leaveDays}</p>
+          <p class="text-xs text-[#94A3B8] mt-1">On Leave</p>
         </div>
-        <div class="card p-4 text-center">
-          <p class="text-2xl font-bold text-[#94A3B8]">${avgHours}</p>
-          <p class="text-xs text-[#94A3B8] mt-1">Avg Hrs / Day</p>
+        <div class="card p-3 md:p-4 text-center">
+          <p class="text-xl md:text-2xl font-bold text-[#94A3B8]">${avgHours}</p>
+          <p class="text-xs text-[#94A3B8] mt-1">Avg Hrs/Day</p>
         </div>
       </div>
 
       <!-- CTA -->
-      <div class="text-center">
-        <button class="btn-primary px-8 py-3 text-sm" onclick="showView('calendar')">
+      <div class="flex gap-2 justify-center">
+        <button class="btn-primary px-6 py-3 text-sm flex-1 md:flex-none" onclick="showView('calendar')">
           Go to Calendar →
+        </button>
+        <button class="btn-secondary px-6 py-3 text-sm flex-1 md:flex-none" onclick="openDTRModal()">
+          Export DTR 📄
         </button>
       </div>
 
@@ -1094,6 +1100,214 @@ function confirmReset() {
     }
     showToast('All data cleared', 'warning');
     setTimeout(() => { location.reload(); }, 1000);
+  }
+}
+
+// =====================================================
+// DTR EXPORT
+// =====================================================
+function openDTRModal() {
+  const now = new Date();
+  document.getElementById('dtr-month').value = now.getMonth() + 1;
+  document.getElementById('dtr-year').value  = now.getFullYear();
+
+  // Pre-fill name from profile
+  const name = currentUser?.displayName || '';
+  document.getElementById('dtr-name').value = name;
+
+  updateDTRPreview();
+
+  // Update preview when month/year changes
+  document.getElementById('dtr-month').onchange = updateDTRPreview;
+  document.getElementById('dtr-year').onchange  = updateDTRPreview;
+
+  document.getElementById('modal-dtr').classList.remove('hidden');
+}
+
+function closeDTROutside(e) {
+  if (e.target.id === 'modal-dtr') closeDTRModal();
+}
+
+function closeDTRModal() {
+  document.getElementById('modal-dtr').classList.add('hidden');
+}
+
+function updateDTRPreview() {
+  const month = parseInt(document.getElementById('dtr-month').value);
+  const year  = parseInt(document.getElementById('dtr-year').value);
+  const data  = getData();
+  const logs  = data.logs || {};
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let totalHours = 0, loggedDays = 0, leaveDays = 0, holidayDays = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds  = toDateStr(year, month, d);
+    const log = logs[ds];
+    if (!log) continue;
+    if (log.isLeave)   { leaveDays++;   continue; }
+    if (log.isHoliday || PH_HOLIDAYS[ds]) { holidayDays++; continue; }
+    if (log.hoursRendered) { totalHours += log.hoursRendered; loggedDays++; }
+  }
+
+  document.getElementById('dtr-preview').innerHTML = `
+    <div class="grid grid-cols-2 gap-2 text-center">
+      <div><p class="text-white font-bold text-base">${loggedDays}</p><p>Days Logged</p></div>
+      <div><p class="text-[#22C55E] font-bold text-base">${totalHours.toFixed(2)}</p><p>Hours Rendered</p></div>
+      <div><p class="text-[#F59E0B] font-bold text-base">${leaveDays}</p><p>Leave Days</p></div>
+      <div><p class="text-[#FF6B00] font-bold text-base">${holidayDays}</p><p>Holidays</p></div>
+    </div>`;
+}
+
+function generateDTR() {
+  const month    = parseInt(document.getElementById('dtr-month').value);
+  const year     = parseInt(document.getElementById('dtr-year').value);
+  const fullName = document.getElementById('dtr-name').value.trim() || 'Intern';
+  const data     = getData();
+  const settings = data.settings || {};
+  const logs     = data.logs || {};
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const monthName   = MONTHS[month - 1];
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const WEEKDAYS    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // ── Header ──
+  doc.setFillColor(15, 31, 61);
+  doc.rect(0, 0, 210, 40, 'F');
+
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('DAILY TIME RECORD', 105, 15, { align: 'center' });
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(148, 163, 184);
+  doc.text('InternTrack — Internship Hour Tracker', 105, 22, { align: 'center' });
+
+  // ── Info block ──
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Name:', 14, 50);
+  doc.text('Company:', 14, 57);
+  doc.text('Month / Year:', 120, 50);
+  doc.text('Required Hours:', 120, 57);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(fullName,                          35, 50);
+  doc.text(settings.companyName || '—',       35, 57);
+  doc.text(`${monthName} ${year}`,            152, 50);
+  doc.text(`${settings.requiredHours || '—'} hrs`, 152, 57);
+
+  // Divider
+  doc.setDrawColor(200, 200, 200);
+  doc.line(14, 61, 196, 61);
+
+  // ── Table ──
+  const rows = [];
+  let monthTotal = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds      = toDateStr(year, month, d);
+    const log     = logs[ds] || {};
+    const isPHol  = PH_HOLIDAYS[ds];
+    const weekday = WEEKDAYS[new Date(year, month - 1, d).getDay()];
+    const isSun   = new Date(year, month - 1, d).getDay() === 0;
+    const isSat   = new Date(year, month - 1, d).getDay() === 6;
+
+    let timeIn = '—', timeOut = '—', hrs = '—', remarks = '';
+
+    if (log.isLeave) {
+      remarks = 'Leave';
+    } else if (log.isHoliday || isPHol) {
+      remarks = isPHol || 'Holiday';
+    } else if (isSun) {
+      remarks = 'Rest Day';
+    } else if (log.timeIn) {
+      timeIn  = log.timeIn;
+      timeOut = log.timeOut || '—';
+      hrs     = log.hoursRendered ? `${log.hoursRendered}` : '—';
+      if (log.lunchIncluded) remarks = 'w/ lunch';
+      monthTotal += log.hoursRendered || 0;
+    }
+
+    rows.push([
+      d,
+      weekday,
+      timeIn,
+      timeOut,
+      hrs,
+      remarks,
+    ]);
+  }
+
+  doc.autoTable({
+    head: [['Day', 'Weekday', 'Time In', 'Time Out', 'Hours', 'Remarks']],
+    body: rows,
+    startY: 65,
+    theme: 'grid',
+    styles: { fontSize: 9, cellPadding: 2.5, halign: 'center', textColor: [30, 30, 30] },
+    headStyles: { fillColor: [255, 107, 0], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+    columnStyles: {
+      0: { cellWidth: 14 },
+      1: { cellWidth: 24 },
+      2: { cellWidth: 28 },
+      3: { cellWidth: 28 },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 50, halign: 'left' },
+    },
+    didParseCell(data) {
+      if (data.section === 'head') return;
+      const remarks = data.row.raw[5];
+      if (data.column.index === 5 || data.column.index === 4 || data.column.index === 1) {
+        if (remarks === 'Leave')                               data.cell.styles.fillColor = [254, 243, 199];
+        else if (remarks && remarks !== 'w/ lunch' && remarks !== 'Rest Day') data.cell.styles.fillColor = [255, 237, 213];
+        else if (remarks === 'Rest Day')                       data.cell.styles.fillColor = [241, 245, 249];
+      }
+    },
+  });
+
+  // ── Totals ──
+  const finalY = doc.lastAutoTable.finalY + 8;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Total Hours Rendered: ${monthTotal.toFixed(2)} hrs`, 14, finalY);
+
+  // ── Signature lines ──
+  const sigY = Math.min(finalY + 20, 265);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(80, 80, 80);
+  doc.text('Certified correct:', 14, sigY);
+  doc.line(14, sigY + 14, 90, sigY + 14);
+  doc.text('Intern Signature / Date', 14, sigY + 19);
+
+  doc.text('Verified by:', 120, sigY);
+  doc.line(120, sigY + 14, 196, sigY + 14);
+  doc.text('Supervisor Signature / Date', 120, sigY + 19);
+
+  // ── Footer ──
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text(`Generated by InternTrack • ${new Date().toLocaleDateString('en-PH', { dateStyle: 'long' })}`, 105, 290, { align: 'center' });
+
+  doc.save(`DTR_${fullName.replace(/\s+/g, '_')}_${monthName}_${year}.pdf`);
+  closeDTRModal();
+  showToast(`DTR exported for ${monthName} ${year}!`);
+}
+
+// Also update mobile nav avatar initial when user is known
+function updateMobileNavAvatar() {
+  const el = document.getElementById('mnav-avatar');
+  if (!el) return;
+  if (currentUser?.photoURL) {
+    el.innerHTML = `<img src="${currentUser.photoURL}" class="w-full h-full object-cover rounded-full" />`;
+  } else {
+    el.textContent = getInitials(currentUser?.displayName || currentUser?.email || 'G');
   }
 }
 

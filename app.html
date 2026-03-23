@@ -37,8 +37,8 @@
         <span class="font-bold text-white text-lg">InternTrack</span>
       </a>
 
-      <!-- Nav + user -->
-      <div class="flex items-center gap-1">
+      <!-- Nav + user (desktop only) -->
+      <div class="flex items-center gap-1 desktop-nav-links">
         <button class="nav-link" id="nav-dashboard" onclick="showView('dashboard')">Dashboard</button>
         <button class="nav-link" id="nav-calendar"  onclick="showView('calendar')">Calendar</button>
         <button class="nav-link" id="nav-settings"  onclick="showView('settings')">
@@ -304,6 +304,88 @@
   </div>
 </div>
 
+<!-- Mobile Bottom Nav -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-nav-btn" id="mnav-dashboard" onclick="showView('dashboard')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </button>
+    <button class="mobile-nav-btn" id="mnav-calendar" onclick="showView('calendar')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Calendar
+    </button>
+    <button class="mobile-nav-btn" onclick="openDTRModal()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Export DTR
+    </button>
+    <button class="mobile-nav-btn" id="mnav-settings" onclick="showView('settings')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </button>
+    <button class="mobile-nav-btn" onclick="openProfile()">
+      <div id="mnav-avatar" class="w-6 h-6 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] flex items-center justify-center text-white text-xs font-bold">?</div>
+      Profile
+    </button>
+  </div>
+</nav>
+
+<!-- DTR Export Modal -->
+<div id="modal-dtr" class="modal-backdrop hidden" onclick="closeDTROutside(event)">
+  <div class="modal-box p-6" style="max-width:420px">
+    <div class="flex items-start justify-between mb-5">
+      <div>
+        <h3 class="text-lg font-bold text-white">Export Daily Time Record</h3>
+        <p class="text-sm text-[#94A3B8]">Generate a printable DTR PDF</p>
+      </div>
+      <button onclick="closeDTRModal()" class="text-[#475569] hover:text-white transition-colors p-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Month</label>
+          <select id="dtr-month" class="input-field text-sm">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Year</label>
+          <select id="dtr-year" class="input-field text-sm">
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Name (on DTR)</label>
+        <input id="dtr-name" class="input-field text-sm" type="text" placeholder="Your full name" />
+      </div>
+
+      <div id="dtr-preview" class="p-3 rounded-lg bg-[#060E1E] border border-[#1e3a5f] text-xs text-[#94A3B8]">
+        Select month and year to preview summary
+      </div>
+
+      <button class="btn-primary w-full py-2.5 text-sm" onclick="generateDTR()">
+        📄 Print / Save as PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden printable DTR -->
+<div id="dtr-printable" style="display:none"></div>
+
 <style>
   @keyframes spin {
     0%   { transform: rotate(0deg); }
@@ -311,6 +393,9 @@
   }
 </style>
 
+<!-- jsPDF via CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
