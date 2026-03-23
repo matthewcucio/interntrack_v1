@@ -3,11 +3,12 @@
 // =====================================================
 // currentUser is set by the auth listener below before the app inits.
 // STORE_KEY is scoped per user so each account has its own data.
-let currentUser = null;
-let STORE_KEY    = 'interntrack_data'; // overwritten once user is known
+let currentUser          = null;
+let STORE_KEY            = 'interntrack_data'; // overwritten once user is known
+let firestoreUnsubscribe = null;               // real-time listener handle
 
 function signOutUser() {
-  // Guest mode — just return to landing page
+  if (firestoreUnsubscribe) { firestoreUnsubscribe(); firestoreUnsubscribe = null; }
   if (STORE_KEY === 'interntrack_data_guest') {
     window.location.href = 'index.html';
     return;
@@ -64,17 +65,47 @@ function updateNavbarUser() {
 async function initApp() {
   updateNavbarUser();
 
-  // Sync from Firestore before rendering
-  const cloudData = await loadFromCloud();
-  if (cloudData) {
-    // Cloud exists → it wins (most recent cross-device source)
-    localStorage.setItem(STORE_KEY, JSON.stringify(cloudData));
-  } else {
-    // No cloud document yet → push existing local data up so other devices can get it
-    const localData = loadData();
-    if (localData && currentUser) {
-      saveToCloud(localData);
-    }
+  // For signed-in users: start a real-time Firestore listener.
+  // The first snapshot loads data; every subsequent snapshot (triggered by
+  // any device saving) re-renders the current view automatically.
+  if (FIREBASE_CONFIGURED && currentUser) {
+    await new Promise((resolve) => {
+      let firstSnapshot = true;
+
+      if (firestoreUnsubscribe) firestoreUnsubscribe(); // clear any stale listener
+
+      firestoreUnsubscribe = firebase.firestore()
+        .collection('users')
+        .doc(currentUser.uid)
+        .onSnapshot(
+          (doc) => {
+            firestoreStatus = 'ok';
+
+            if (doc.exists) {
+              // Cloud data arrived — update local cache
+              localStorage.setItem(STORE_KEY, JSON.stringify(doc.data()));
+            } else if (firstSnapshot) {
+              // No cloud doc yet — push local data up so other devices get it
+              const local = loadData();
+              if (local) saveToCloud(local);
+            }
+
+            firstSnapshot = false;
+            resolve(); // unblocks initApp() on first snapshot
+
+            // For subsequent snapshots (real-time updates from other devices):
+            // re-render whatever view is currently open
+            if (currentView === 'dashboard') renderDashboard();
+            if (currentView === 'calendar')  renderCalendar();
+            if (currentView === 'settings')  renderSettings();
+          },
+          (err) => {
+            firestoreStatus = err.code === 'permission-denied' ? 'unconfigured' : 'error';
+            console.error('[InternTrack] Firestore listener error:', err.code, err.message);
+            resolve(); // still let the app load using localStorage
+          }
+        );
+    });
   }
 
   const loading = document.getElementById('auth-loading');
@@ -212,21 +243,6 @@ function saveData(data) {
 // =====================================================
 // 'ok' | 'error' | 'unconfigured' | null (unknown yet)
 let firestoreStatus = null;
-
-async function loadFromCloud() {
-  if (!FIREBASE_CONFIGURED || !currentUser) return null;
-  try {
-    const doc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
-    firestoreStatus = 'ok';
-    return doc.exists ? doc.data() : null;
-  } catch (e) {
-    firestoreStatus = e.code === 'permission-denied' || e.code === 'failed-precondition'
-      ? 'unconfigured'
-      : 'error';
-    console.error('[InternTrack] Firestore read failed:', e.code, e.message);
-    return null; // fall back to localStorage silently — see status in Settings
-  }
-}
 
 function saveToCloud(data) {
   if (!FIREBASE_CONFIGURED || !currentUser) return;
