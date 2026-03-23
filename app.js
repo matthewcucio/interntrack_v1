@@ -64,6 +64,10 @@ function updateNavbarUser() {
 }
 
 async function initApp() {
+  // Apply saved theme (also set by the inline script in app.html, but set here as fallback)
+  const savedTheme = localStorage.getItem('interntrack_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+
   updateNavbarUser();
 
   // For signed-in users: start a real-time Firestore listener.
@@ -237,6 +241,20 @@ function loadData() {
 function saveData(data) {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
   saveToCloud(data); // fire-and-forget — UI stays instant
+}
+
+// =====================================================
+// THEME
+// =====================================================
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('interntrack_theme', theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+  renderSettings();
 }
 
 // =====================================================
@@ -991,9 +1009,24 @@ function renderSettings() {
   const { settings } = data;
   const el = document.getElementById('view-settings');
 
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
   el.innerHTML = `
     <div class="max-w-lg mx-auto space-y-5">
       <h2 class="text-xl font-bold text-white">Settings</h2>
+
+      <!-- Appearance -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-semibold text-white">Appearance</p>
+            <p class="text-xs text-[#94A3B8] mt-0.5">Light mode for a brighter look</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-[#94A3B8]">${currentTheme === 'light' ? '☀️ Light' : '🌙 Dark'}</span>
+            <button class="toggle-btn ${currentTheme === 'light' ? 'on' : ''}" onclick="toggleTheme()" title="Toggle light/dark mode"></button>
+          </div>
+        </div>
+      </div>
 
       <div class="card p-6 space-y-4">
         <h3 class="font-semibold text-white text-sm uppercase tracking-wide text-[#94A3B8]">Internship Profile</h3>

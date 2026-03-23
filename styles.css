@@ -1,13 +1,37 @@
+/* =====================================================
+   DESIGN TOKENS
+   ===================================================== */
+:root {
+  --bg-page:  #060E1E;
+  --bg-card:  #0F1F3D;
+  --bg-deep:  #0A1628;
+  --border:   #1e3a5f;
+  --text-1:   #FFFFFF;
+  --text-2:   #94A3B8;
+  --text-3:   #475569;
+}
+
+[data-theme="light"] {
+  --bg-page:  #F1F5F9;
+  --bg-card:  #FFFFFF;
+  --bg-deep:  #F0F4F8;
+  --border:   #CBD5E1;
+  --text-1:   #0F172A;
+  --text-2:   #475569;
+  --text-3:   #94A3B8;
+}
+
 * {
   font-family: 'Inter', system-ui, sans-serif;
   box-sizing: border-box;
 }
 
 body {
-  background: #060E1E;
-  color: #fff;
+  background: var(--bg-page);
+  color: var(--text-1);
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 /* =====================================================
@@ -21,7 +45,8 @@ body {
   background:
     radial-gradient(ellipse at 20% 50%, rgba(255, 107, 0, 0.05) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 20%, rgba(10, 22, 40, 0.8) 0%, transparent 60%),
-    #060E1E;
+    var(--bg-page);
+  transition: background 0.25s ease;
 }
 
 .bg-animated::after {
@@ -30,6 +55,16 @@ body {
   inset: 0;
   background: radial-gradient(ellipse at 60% 80%, rgba(255, 107, 0, 0.03) 0%, transparent 50%);
   animation: bgPulse 8s ease-in-out infinite alternate;
+}
+
+[data-theme="light"] .bg-animated {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 107, 0, 0.07) 0%, transparent 60%),
+    var(--bg-page);
+}
+
+[data-theme="light"] .bg-animated::after {
+  background: radial-gradient(ellipse at 60% 80%, rgba(255, 107, 0, 0.04) 0%, transparent 50%);
 }
 
 @keyframes bgPulse {
@@ -64,9 +99,9 @@ body {
 }
 
 .btn-secondary {
-  background: #0F1F3D;
-  color: #94A3B8;
-  border: 1px solid #1e3a5f;
+  background: var(--bg-card);
+  color: var(--text-2);
+  border: 1px solid var(--border);
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 8px;
@@ -76,7 +111,7 @@ body {
 
 .btn-secondary:hover {
   border-color: #FF6B00;
-  color: #fff;
+  color: var(--text-1);
   box-shadow: 0 0 8px rgba(255, 107, 0, 0.3);
 }
 
@@ -101,9 +136,10 @@ body {
    CARDS
    ===================================================== */
 .card {
-  background: #0F1F3D;
-  border: 1px solid #1e3a5f;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .card-hover {
@@ -121,9 +157,9 @@ body {
    INPUT FIELDS
    ===================================================== */
 .input-field {
-  background: #0A1628;
-  border: 1px solid #1e3a5f;
-  color: #fff;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  color: var(--text-1);
   border-radius: 8px;
   padding: 10px 14px;
   width: 100%;
@@ -137,14 +173,14 @@ body {
 }
 
 .input-field::placeholder {
-  color: #475569;
+  color: var(--text-3);
 }
 
 /* =====================================================
    NAVBAR
    ===================================================== */
 .nav-link {
-  color: #94A3B8;
+  color: var(--text-2);
   transition: all 0.2s ease;
   cursor: pointer;
   padding: 10px 12px;
@@ -181,9 +217,13 @@ body {
   animation: fadeIn 0.2s ease;
 }
 
+[data-theme="light"] .modal-backdrop {
+  background: rgba(15, 23, 42, 0.6);
+}
+
 .modal-box {
-  background: #0F1F3D;
-  border: 1px solid #1e3a5f;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 16px;
   max-width: 520px;
   width: 94%;
@@ -308,17 +348,21 @@ body {
   bottom: 24px;
   right: 16px;
   z-index: 200;
-  background: #0F1F3D;
+  background: var(--bg-card);
   border: 1px solid #FF6B00;
   box-shadow: 0 0 16px rgba(255, 107, 0, 0.4);
   border-radius: 10px;
   padding: 12px 20px;
-  color: #fff;
+  color: var(--text-1);
   font-weight: 500;
   animation: toastIn 0.3s ease;
   min-width: 200px;
   max-width: calc(100vw - 32px);
   font-size: 0.875rem;
+}
+
+[data-theme="light"] .toast {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 0 0 1px #FF6B00;
 }
 
 @keyframes toastIn {
@@ -340,8 +384,8 @@ body {
    CUSTOM SCROLLBAR
    ===================================================== */
 ::-webkit-scrollbar       { width: 6px; }
-::-webkit-scrollbar-track { background: #0A1628; }
-::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #FF6B00; }
 
 /* =====================================================
@@ -351,7 +395,7 @@ body {
   width: 44px;
   height: 24px;
   border-radius: 12px;
-  background: #1e3a5f;
+  background: var(--border);
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -401,7 +445,7 @@ body {
    ACTIVITY FEED
    ===================================================== */
 .activity-item {
-  border-left: 2px solid #1e3a5f;
+  border-left: 2px solid var(--border);
   padding-left: 12px;
   transition: all 0.2s ease;
 }
@@ -419,10 +463,11 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: #0F1F3D;
-  border-top: 1px solid #1e3a5f;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
   z-index: 50;
   padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 
 .mobile-nav-inner {
@@ -437,7 +482,7 @@ body {
   align-items: center;
   gap: 3px;
   padding: 6px 16px;
-  color: #94A3B8;
+  color: var(--text-2);
   font-size: 10px;
   font-weight: 600;
   border: none;
@@ -489,9 +534,92 @@ body {
    GENERAL MOBILE OVERRIDES
    ===================================================== */
 @media (max-width: 640px) {
-  /* Tighter spacing in cards on small screens */
   .card { border-radius: 10px; }
-
-  /* Calendar day labels smaller */
   .cal-day span:first-child { font-size: 10px; }
+}
+
+/* =====================================================
+   LIGHT MODE — Tailwind class overrides
+   These override hardcoded Tailwind arbitrary colors
+   used in the dynamically generated app HTML.
+   ===================================================== */
+
+/* Nav bar */
+[data-theme="light"] nav {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: var(--border) !important;
+}
+
+/* Auth loading overlay */
+[data-theme="light"] #auth-loading {
+  background: var(--bg-page) !important;
+}
+
+/* Headings and primary text */
+[data-theme="light"] .text-white {
+  color: var(--text-1) !important;
+}
+
+/* Keep button text white even in light mode */
+[data-theme="light"] .btn-primary,
+[data-theme="light"] .btn-primary * {
+  color: #fff !important;
+}
+
+/* Secondary text */
+[data-theme="light"] .text-\[\#94A3B8\] {
+  color: var(--text-2) !important;
+}
+
+/* Muted text */
+[data-theme="light"] .text-\[\#475569\] {
+  color: var(--text-3) !important;
+}
+
+/* Card/panel backgrounds */
+[data-theme="light"] .bg-\[\#0F1F3D\] {
+  background: var(--bg-card) !important;
+}
+
+/* Page background */
+[data-theme="light"] .bg-\[\#060E1E\] {
+  background: var(--bg-page) !important;
+}
+
+/* Deep background (inputs, code blocks) */
+[data-theme="light"] .bg-\[\#0A1628\] {
+  background: var(--bg-deep) !important;
+}
+
+/* Borders */
+[data-theme="light"] .border-\[\#1e3a5f\] {
+  border-color: var(--border) !important;
+}
+
+/* Dividers — border-l, border-t etc with the dark color */
+[data-theme="light"] .border-l-\[\#1e3a5f\],
+[data-theme="light"] .border-t-\[\#1e3a5f\] {
+  border-color: var(--border) !important;
+}
+
+/* User info separator in navbar */
+[data-theme="light"] .border-l {
+  border-color: var(--border) !important;
+}
+
+/* Calendar header row (day labels like Mon/Tue) */
+[data-theme="light"] .cal-header {
+  color: var(--text-2) !important;
+}
+
+/* Subtle card backgrounds used for status sections */
+[data-theme="light"] .bg-\[\#0F1F3D\]\/50 {
+  background: rgba(248, 250, 252, 0.8) !important;
+}
+
+/* Code/pre blocks — keep dark for readability */
+[data-theme="light"] pre {
+  background: #1E293B !important;
+  color: #E2E8F0 !important;
+  border-color: #334155 !important;
 }
