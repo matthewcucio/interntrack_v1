@@ -157,12 +157,13 @@ a { text-decoration: none; color: inherit; }
     linear-gradient(165deg, #7a2d00 0%, #2e0f00 25%, #0a1628 55%, #060E1E 100%);
 }
 
-/* Decorative blobs */
+/* Decorative blobs — always behind hero content */
 .hero-blob {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
   filter: blur(60px);
+  z-index: 0;
 }
 
 .hero-blob-1 {
@@ -192,6 +193,8 @@ a { text-decoration: none; color: inherit; }
 }
 
 .hero-inner {
+  position: relative;
+  z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;

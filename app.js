@@ -485,7 +485,7 @@ function renderDashboard() {
           <!-- Ring — responsive size -->
           <div class="relative flex-shrink-0" style="width:clamp(110px,30vw,140px);height:clamp(110px,30vw,140px)">
             <svg width="100%" height="100%" viewBox="0 0 140 140">
-              <circle cx="70" cy="70" r="${r}" fill="none" stroke="#1e3a5f" stroke-width="10"/>
+              <circle cx="70" cy="70" r="${r}" fill="none" stroke-width="10" class="progress-ring-track"/>
               <circle cx="70" cy="70" r="${r}" fill="none" stroke="#FF6B00" stroke-width="10"
                 class="progress-ring-fill"
                 stroke-dasharray="${C}"

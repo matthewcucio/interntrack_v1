@@ -320,6 +320,11 @@ body {
    ===================================================== */
 .progress-ring { transform: rotate(-90deg); }
 
+.progress-ring-track {
+  fill: none;
+  stroke: var(--border);
+}
+
 .progress-ring-fill {
   transition: stroke-dashoffset 1s ease;
   stroke-linecap: round;
@@ -650,4 +655,40 @@ body {
 
 [data-theme="light"] .cal-day.other-month {
   background: transparent !important;
+}
+
+/* =====================================================
+   LIGHT MODE — Dashboard polish
+   ===================================================== */
+
+/* Cards get a soft shadow instead of a border glow */
+[data-theme="light"] .card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
+  border-color: #E2E8F0;
+}
+
+[data-theme="light"] .card-hover:hover {
+  box-shadow: 0 4px 20px rgba(255,107,0,0.15), 0 1px 4px rgba(0,0,0,0.06);
+  border-color: #FF6B00;
+}
+
+/* Nested cards (stat cards inside the progress hero card) get a tinted bg */
+[data-theme="light"] .card .card {
+  background: #F8FAFC;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* Completion banner */
+[data-theme="light"] .bg-\[\#22C55E\]\/10 {
+  background: rgba(34, 197, 94, 0.08) !important;
+}
+
+/* Activity feed divider line */
+[data-theme="light"] .activity-item {
+  border-left-color: #E2E8F0;
+}
+
+/* Modal box shadow in light mode */
+[data-theme="light"] .modal-box {
+  box-shadow: 0 8px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
 }
