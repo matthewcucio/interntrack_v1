@@ -63,11 +63,20 @@ function updateNavbarUser() {
 
 async function initApp() {
   updateNavbarUser();
-  // Sync from Firestore before rendering — cloud data wins over local cache
+
+  // Sync from Firestore before rendering
   const cloudData = await loadFromCloud();
   if (cloudData) {
+    // Cloud exists → it wins (most recent cross-device source)
     localStorage.setItem(STORE_KEY, JSON.stringify(cloudData));
+  } else {
+    // No cloud document yet → push existing local data up so other devices can get it
+    const localData = loadData();
+    if (localData && currentUser) {
+      saveToCloud(localData);
+    }
   }
+
   const loading = document.getElementById('auth-loading');
   if (loading) loading.style.display = 'none';
   checkOnboarding();
@@ -207,7 +216,8 @@ async function loadFromCloud() {
     const doc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
     return doc.exists ? doc.data() : null;
   } catch (e) {
-    console.warn('[InternTrack] Firestore read failed, using local cache', e);
+    console.error('[InternTrack] Firestore read failed:', e);
+    showToast('Cloud sync failed — check Firestore setup in Firebase Console', 'error');
     return null;
   }
 }
@@ -215,7 +225,23 @@ async function loadFromCloud() {
 function saveToCloud(data) {
   if (!FIREBASE_CONFIGURED || !currentUser) return;
   firebase.firestore().collection('users').doc(currentUser.uid).set(data)
-    .catch(e => console.warn('[InternTrack] Firestore write failed', e));
+    .catch(e => {
+      console.error('[InternTrack] Firestore write failed:', e);
+      showToast('Sync failed — data saved locally only', 'error');
+    });
+}
+
+async function manualSync() {
+  const data = getData();
+  if (!data) { showToast('Nothing to sync', 'warning'); return; }
+  showToast('Syncing to cloud…');
+  try {
+    await firebase.firestore().collection('users').doc(currentUser.uid).set(data);
+    showToast('Synced! Your data is now in the cloud.');
+  } catch (e) {
+    console.error('[InternTrack] Manual sync failed:', e);
+    showToast('Sync failed — see console for details', 'error');
+  }
 }
 
 function getData() {
@@ -949,6 +975,16 @@ function renderSettings() {
         <button class="btn-primary w-full py-2.5 text-sm" onclick="saveSettings()">Save Changes</button>
       </div>
 
+      ${FIREBASE_CONFIGURED && currentUser ? `
+      <div class="card p-6 space-y-3">
+        <h3 class="font-semibold text-white text-sm uppercase tracking-wide text-[#94A3B8]">Cloud Sync</h3>
+        <p class="text-xs text-[#94A3B8]">
+          Signed in as <strong class="text-white">${currentUser.email || currentUser.displayName || 'Google Account'}</strong>.
+          Your logs sync to Firestore so they appear on any device you sign in to.
+        </p>
+        <button class="btn-secondary w-full py-2.5 text-sm" onclick="manualSync()">↑ Push Local Data to Cloud Now</button>
+      </div>` : ''}
+
       <div class="card p-6 space-y-3 border-[#EF4444]/20">
         <h3 class="font-semibold text-[#EF4444] text-sm uppercase tracking-wide">Danger Zone</h3>
         <p class="text-xs text-[#94A3B8]">
@@ -959,7 +995,7 @@ function renderSettings() {
 
       <div class="card p-5 text-center">
         <p class="text-xs text-[#94A3B8]">InternTrack — Your personal internship hour tracker</p>
-        <p class="text-xs text-[#475569] mt-1">Hour logs are saved locally in your browser</p>
+        <p class="text-xs text-[#475569] mt-1">${FIREBASE_CONFIGURED && currentUser ? 'Logs synced to cloud via Firestore' : 'Hour logs are saved locally in your browser'}</p>
       </div>
     </div>
   `;
