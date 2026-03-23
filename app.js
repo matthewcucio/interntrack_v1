@@ -717,7 +717,7 @@ function renderCalendar() {
             return `
               <div class="${cls}" ${onClick}>
                 <span class="text-xs font-bold ${isToday ? 'text-[#FF6B00]' : 'text-[#94A3B8]'} leading-none">${cell.day}</span>
-                ${isPHol && !cell.other  ? `<span class="badge badge-holiday mt-0.5" style="font-size:8px;padding:1px 4px">${isPHol.split(' ')[0]}</span>` : ''}
+                ${isHol && !cell.other && !isSelected ? `<span class="badge badge-holiday mt-0.5" style="font-size:8px;padding:1px 4px">${isPHol ? isPHol.split(' ').slice(0,2).join(' ') : 'Holiday'}</span>` : ''}
                 ${isLeave && !cell.other && !isSelected ? `<span class="badge badge-leave mt-0.5" style="font-size:8px;padding:1px 4px">Leave</span>` : ''}
                 ${isLogged && !cell.other && !isSelected ? `<span class="text-[#22C55E] mt-auto" style="font-size:9px;font-weight:700">${log.hoursRendered}h</span>` : ''}
               </div>`;
