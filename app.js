@@ -61,12 +61,15 @@ function updateNavbarUser() {
   }
 }
 
-function initApp() {
+async function initApp() {
   updateNavbarUser();
-  // Hide auth loading overlay
+  // Sync from Firestore before rendering — cloud data wins over local cache
+  const cloudData = await loadFromCloud();
+  if (cloudData) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(cloudData));
+  }
   const loading = document.getElementById('auth-loading');
   if (loading) loading.style.display = 'none';
-
   checkOnboarding();
   showView('dashboard');
 }
@@ -192,6 +195,27 @@ function loadData() {
 
 function saveData(data) {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  saveToCloud(data); // fire-and-forget — UI stays instant
+}
+
+// =====================================================
+// FIRESTORE CLOUD SYNC
+// =====================================================
+async function loadFromCloud() {
+  if (!FIREBASE_CONFIGURED || !currentUser) return null;
+  try {
+    const doc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
+    return doc.exists ? doc.data() : null;
+  } catch (e) {
+    console.warn('[InternTrack] Firestore read failed, using local cache', e);
+    return null;
+  }
+}
+
+function saveToCloud(data) {
+  if (!FIREBASE_CONFIGURED || !currentUser) return;
+  firebase.firestore().collection('users').doc(currentUser.uid).set(data)
+    .catch(e => console.warn('[InternTrack] Firestore write failed', e));
 }
 
 function getData() {
@@ -813,6 +837,10 @@ function saveSettings() {
 function confirmReset() {
   if (confirm('Are you sure you want to reset ALL data? This cannot be undone.')) {
     localStorage.removeItem(STORE_KEY);
+    if (FIREBASE_CONFIGURED && currentUser) {
+      firebase.firestore().collection('users').doc(currentUser.uid).delete()
+        .catch(e => console.warn('[InternTrack] Firestore delete failed', e));
+    }
     showToast('All data cleared', 'warning');
     setTimeout(() => { location.reload(); }, 1000);
   }

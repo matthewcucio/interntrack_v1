@@ -11,8 +11,20 @@
 //     → Get Started → Enable "Google" AND "Email/Password"
 //  6. In Authentication → Settings → Authorized domains
 //     → Add your Vercel domain (e.g. interntrack.vercel.app)
+//  7. Enable Firestore: Build → Firestore Database → Create database
+//     → Start in PRODUCTION mode → choose a region → Done
+//  8. In Firestore → Rules tab, paste and Publish:
 //
-//  No database or billing required — Firebase Auth is 100% free.
+//     rules_version = '2';
+//     service cloud.firestore {
+//       match /databases/{database}/documents {
+//         match /users/{userId} {
+//           allow read, write: if request.auth != null && request.auth.uid == userId;
+//         }
+//       }
+//     }
+//
+//  Firestore is free up to 1GB storage / 50k reads / 20k writes per day.
 // ================================================================
 
 const firebaseConfig = {
