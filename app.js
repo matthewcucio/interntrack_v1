@@ -210,37 +210,52 @@ function saveData(data) {
 // =====================================================
 // FIRESTORE CLOUD SYNC
 // =====================================================
+// 'ok' | 'error' | 'unconfigured' | null (unknown yet)
+let firestoreStatus = null;
+
 async function loadFromCloud() {
   if (!FIREBASE_CONFIGURED || !currentUser) return null;
   try {
     const doc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
+    firestoreStatus = 'ok';
     return doc.exists ? doc.data() : null;
   } catch (e) {
-    console.error('[InternTrack] Firestore read failed:', e);
-    showToast('Cloud sync failed — check Firestore setup in Firebase Console', 'error');
-    return null;
+    firestoreStatus = e.code === 'permission-denied' || e.code === 'failed-precondition'
+      ? 'unconfigured'
+      : 'error';
+    console.error('[InternTrack] Firestore read failed:', e.code, e.message);
+    return null; // fall back to localStorage silently — see status in Settings
   }
 }
 
 function saveToCloud(data) {
   if (!FIREBASE_CONFIGURED || !currentUser) return;
   firebase.firestore().collection('users').doc(currentUser.uid).set(data)
+    .then(() => { firestoreStatus = 'ok'; })
     .catch(e => {
-      console.error('[InternTrack] Firestore write failed:', e);
-      showToast('Sync failed — data saved locally only', 'error');
+      firestoreStatus = 'error';
+      console.error('[InternTrack] Firestore write failed:', e.code, e.message);
     });
 }
 
 async function manualSync() {
+  if (!FIREBASE_CONFIGURED || !currentUser) {
+    showToast('Sign in to enable cloud sync', 'warning');
+    return;
+  }
   const data = getData();
   if (!data) { showToast('Nothing to sync', 'warning'); return; }
-  showToast('Syncing to cloud…');
+  showToast('Syncing…');
   try {
     await firebase.firestore().collection('users').doc(currentUser.uid).set(data);
-    showToast('Synced! Your data is now in the cloud.');
+    firestoreStatus = 'ok';
+    showToast('Synced! Data is now in the cloud.');
+    renderSettings(); // refresh status card
   } catch (e) {
-    console.error('[InternTrack] Manual sync failed:', e);
-    showToast('Sync failed — see console for details', 'error');
+    firestoreStatus = 'error';
+    console.error('[InternTrack] Manual sync failed:', e.code, e.message);
+    showToast(`Sync failed: ${e.code || e.message}`, 'error');
+    renderSettings();
   }
 }
 
@@ -976,13 +991,46 @@ function renderSettings() {
       </div>
 
       ${FIREBASE_CONFIGURED && currentUser ? `
-      <div class="card p-6 space-y-3">
-        <h3 class="font-semibold text-white text-sm uppercase tracking-wide text-[#94A3B8]">Cloud Sync</h3>
+      <div class="card p-6 space-y-4 ${firestoreStatus === 'ok' ? 'border-[#22C55E]/30' : firestoreStatus === 'unconfigured' || firestoreStatus === 'error' ? 'border-[#EF4444]/30' : ''}">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold text-white text-sm uppercase tracking-wide text-[#94A3B8]">Cloud Sync</h3>
+          <span class="text-xs font-semibold px-2 py-1 rounded-full ${
+            firestoreStatus === 'ok'           ? 'bg-[#22C55E]/20 text-[#22C55E]' :
+            firestoreStatus === 'unconfigured' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
+            firestoreStatus === 'error'        ? 'bg-[#F59E0B]/20 text-[#F59E0B]' :
+                                                 'bg-[#475569]/20 text-[#94A3B8]'
+          }">
+            ${ firestoreStatus === 'ok'           ? '● Active' :
+               firestoreStatus === 'unconfigured' ? '● Not set up' :
+               firestoreStatus === 'error'        ? '● Error' :
+                                                    '● Checking…' }
+          </span>
+        </div>
+
         <p class="text-xs text-[#94A3B8]">
           Signed in as <strong class="text-white">${currentUser.email || currentUser.displayName || 'Google Account'}</strong>.
-          Your logs sync to Firestore so they appear on any device you sign in to.
         </p>
-        <button class="btn-secondary w-full py-2.5 text-sm" onclick="manualSync()">↑ Push Local Data to Cloud Now</button>
+
+        ${firestoreStatus === 'unconfigured' ? `
+        <div class="p-3 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#94A3B8] space-y-1.5">
+          <p class="font-semibold text-[#EF4444]">Firestore database not set up yet</p>
+          <p>1. Go to <strong class="text-white">console.firebase.google.com</strong> → your project</p>
+          <p>2. Left sidebar → <strong class="text-white">Build → Firestore Database</strong></p>
+          <p>3. Click <strong class="text-white">Create database</strong> → Production mode → Done</p>
+          <p>4. Click the <strong class="text-white">Rules</strong> tab → paste this → Publish:</p>
+          <pre class="bg-[#060E1E] p-2 rounded text-[10px] text-[#22C55E] overflow-x-auto mt-1">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+        &amp;&amp; request.auth.uid == userId;
+    }
+  }
+}</pre>
+          <p>5. Come back here and click <strong class="text-white">Sync Now</strong>.</p>
+        </div>` : ''}
+
+        <button class="btn-secondary w-full py-2.5 text-sm" onclick="manualSync()">↑ Sync Local Data to Cloud Now</button>
       </div>` : ''}
 
       <div class="card p-6 space-y-3 border-[#EF4444]/20">
