@@ -414,7 +414,12 @@ function saveOnboarding() {
   }
 
   const data = getData();
-  data.settings = { requiredHours: hours, startDate: start, companyName: company };
+  data.settings = {
+    requiredHours: hours,
+    startDate:     start,
+    companyName:   company,
+    workDays:      [...obSelectedDays].sort(),
+  };
   saveData(data);
 
   document.getElementById('modal-onboarding').classList.add('hidden');
@@ -447,6 +452,79 @@ function showView(view) {
 }
 
 // =====================================================
+// WORK DAY TOGGLE (onboarding)
+// =====================================================
+let obSelectedDays = new Set([1, 2, 3, 4, 5]); // Mon–Fri default
+
+function obToggleDay(d) {
+  if (obSelectedDays.has(d)) {
+    if (obSelectedDays.size === 1) return; // keep at least one
+    obSelectedDays.delete(d);
+  } else {
+    obSelectedDays.add(d);
+  }
+  const btn = document.getElementById(`ob-day-${d}`);
+  if (btn) {
+    const on = obSelectedDays.has(d);
+    btn.className = `ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+      on ? 'border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00]'
+         : 'border-[#1e3a5f] text-[#94A3B8]'}`;
+  }
+}
+
+// =====================================================
+// ANALYTICS HELPERS
+// =====================================================
+function calcAvgTime(logs, field) {
+  const minutes = Object.values(logs)
+    .filter(l => l[field] && !l.isLeave && !l.isHoliday)
+    .map(l => {
+      const [h, m] = l[field].split(':').map(Number);
+      return h * 60 + m;
+    });
+  if (!minutes.length) return null;
+  const avg = Math.round(minutes.reduce((s, t) => s + t, 0) / minutes.length);
+  const hh  = Math.floor(avg / 60);
+  const mm  = avg % 60;
+  const suffix = hh >= 12 ? 'PM' : 'AM';
+  const h12   = hh % 12 || 12;
+  return `${h12}:${String(mm).padStart(2, '0')} ${suffix}`;
+}
+
+function calcEstimatedEndDate(settings, logs) {
+  const required  = settings.requiredHours || 0;
+  const rendered  = calcRenderedHours(logs);
+  let   remaining = required - rendered;
+  if (remaining <= 0) return { done: true };
+
+  const workDays = settings.workDays || [1, 2, 3, 4, 5];
+
+  // Average hours per working day from actual logs
+  const workEntries = Object.values(logs).filter(l => !l.isLeave && !l.isHoliday && l.hoursRendered > 0);
+  const avgHrs = workEntries.length > 0
+    ? workEntries.reduce((s, l) => s + (l.hoursRendered || 0), 0) / workEntries.length
+    : 8;
+
+  const cur = new Date();
+  cur.setHours(0, 0, 0, 0);
+  let holidaysSkipped = 0;
+  let iters = 0;
+
+  while (remaining > 0 && iters++ < 1500) {
+    cur.setDate(cur.getDate() + 1);
+    const dow = cur.getDay();
+    if (!workDays.includes(dow)) continue;
+
+    const ds = toDateStr(cur.getFullYear(), cur.getMonth() + 1, cur.getDate());
+    if (PH_HOLIDAYS[ds]) { holidaysSkipped++; continue; }
+
+    remaining -= (logs[ds]?.hoursRendered || avgHrs);
+  }
+
+  return { done: false, date: new Date(cur), holidaysSkipped, avgHrs: Math.round(avgHrs * 10) / 10 };
+}
+
+// =====================================================
 // DASHBOARD VIEW
 // =====================================================
 function renderDashboard() {
@@ -462,6 +540,21 @@ function renderDashboard() {
   const leaveDays   = allLogDates.filter(d => logs[d].isLeave).length;
   const avgHours    = loggedDays > 0 ? (rendered / loggedDays).toFixed(2) : '—';
   const recent      = allLogDates.sort((a, b) => b.localeCompare(a)).slice(0, 5);
+
+  // Avg time in/out
+  const avgTimeIn  = calcAvgTime(logs, 'timeIn');
+  const avgTimeOut = calcAvgTime(logs, 'timeOut');
+
+  // Estimated completion
+  const estResult  = calcEstimatedEndDate(settings, logs);
+  const estLabel   = estResult.done ? 'Done!' : estResult.date
+    ? estResult.date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '—';
+  const estSub     = estResult.done
+    ? 'Internship complete'
+    : estResult.holidaysSkipped > 0
+      ? `Skipping ${estResult.holidaysSkipped} holiday${estResult.holidaysSkipped > 1 ? 's' : ''} · ~${estResult.avgHrs}h/day avg`
+      : estResult.avgHrs ? `~${estResult.avgHrs}h/day avg` : '';
 
   // Circular progress ring
   const r = 54;
@@ -536,6 +629,23 @@ function renderDashboard() {
         <div class="card p-3 md:p-4 text-center">
           <p class="text-xl md:text-2xl font-bold text-[#94A3B8]">${avgHours}</p>
           <p class="text-xs text-[#94A3B8] mt-1">Avg Hrs/Day</p>
+        </div>
+      </div>
+
+      <!-- Time analytics -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="card p-3 md:p-4 text-center">
+          <p class="text-xs text-[#94A3B8] mb-1">Avg Time In</p>
+          <p class="text-sm md:text-base font-bold text-[#38BDF8]">${avgTimeIn || '—'}</p>
+        </div>
+        <div class="card p-3 md:p-4 text-center">
+          <p class="text-xs text-[#94A3B8] mb-1">Avg Time Out</p>
+          <p class="text-sm md:text-base font-bold text-[#A78BFA]">${avgTimeOut || '—'}</p>
+        </div>
+        <div class="card p-3 md:p-4 text-center ${estResult.done ? 'border-[#22C55E]/30' : 'border-[#FF6B00]/20'}">
+          <p class="text-xs text-[#94A3B8] mb-1">Est. End Date</p>
+          <p class="text-sm md:text-base font-bold ${estResult.done ? 'text-[#22C55E]' : 'text-[#FF6B00]'}">${estLabel}</p>
+          ${estSub ? `<p class="text-[10px] text-[#475569] mt-0.5 leading-tight">${estSub}</p>` : ''}
         </div>
       </div>
 
@@ -1042,6 +1152,19 @@ function renderSettings() {
           <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Internship Start Date</label>
           <input id="s-start" class="input-field" type="date" value="${settings.startDate || ''}" />
         </div>
+        <div>
+          <label class="block text-sm font-medium text-[#94A3B8] mb-2">Work Schedule <span class="text-[#475569] font-normal">(days you render hours)</span></label>
+          <div class="flex gap-1.5 flex-wrap">
+            ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((lbl, d) => {
+              const on = (settings.workDays || [1,2,3,4,5]).includes(d);
+              return `<button type="button" id="s-day-${d}" data-on="${on ? 1 : 0}"
+                onclick="sToggleDay(${d})"
+                class="s-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  on ? 'border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00]'
+                     : 'border-[#1e3a5f] text-[#94A3B8]'}">${lbl}</button>`;
+            }).join('')}
+          </div>
+        </div>
         <button class="btn-primary w-full py-2.5 text-sm" onclick="saveSettings()">Save Changes</button>
       </div>
 
@@ -1104,6 +1227,22 @@ service cloud.firestore {
   `;
 }
 
+function sToggleDay(d) {
+  const btn = document.getElementById(`s-day-${d}`);
+  if (!btn) return;
+  const on = btn.dataset.on === '1';
+  // Count currently active to prevent zero
+  const activeCount = [0,1,2,3,4,5,6].filter(x => {
+    const b = document.getElementById(`s-day-${x}`);
+    return b && b.dataset.on === '1';
+  }).length;
+  if (on && activeCount === 1) return;
+  btn.dataset.on = on ? '0' : '1';
+  btn.className = `s-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+    !on ? 'border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00]'
+        : 'border-[#1e3a5f] text-[#94A3B8]'}`;
+}
+
 function saveSettings() {
   const company = document.getElementById('s-company').value.trim();
   const hours   = parseInt(document.getElementById('s-hours').value);
@@ -1114,13 +1253,21 @@ function saveSettings() {
     return;
   }
 
+  // Read work days from settings view checkboxes
+  const days = [0,1,2,3,4,5,6].filter(d => {
+    const el = document.getElementById(`s-day-${d}`);
+    return el && el.dataset.on === '1';
+  });
+
   const data = getData();
   data.settings = {
     companyName:   company || data.settings.companyName,
     requiredHours: hours,
     startDate:     start,
+    workDays:      days.length ? days : (data.settings.workDays || [1,2,3,4,5]),
   };
   saveData(data);
+  renderDashboard();
   showToast('Settings saved!');
 }
 

@@ -93,7 +93,7 @@
     <div class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Company Name</label>
-        <input id="ob-company" class="input-field" type="text" value="Designblue Philippines Inc." placeholder="Your company name" />
+        <input id="ob-company" class="input-field" type="text" placeholder="Your company name" />
       </div>
       <div>
         <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Total Required Internship Hours</label>
@@ -102,6 +102,19 @@
       <div>
         <label class="block text-sm font-medium text-[#94A3B8] mb-1.5">Internship Start Date</label>
         <input id="ob-start" class="input-field" type="date" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[#94A3B8] mb-2">Work Days <span class="text-[#475569] font-normal">(days you render hours)</span></label>
+        <div class="flex gap-1.5 flex-wrap">
+          <button type="button" id="ob-day-0" onclick="obToggleDay(0)" class="ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-[#1e3a5f] text-[#94A3B8] transition-all">Sun</button>
+          <button type="button" id="ob-day-1" onclick="obToggleDay(1)" class="ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00] transition-all">Mon</button>
+          <button type="button" id="ob-day-2" onclick="obToggleDay(2)" class="ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00] transition-all">Tue</button>
+          <button type="button" id="ob-day-3" onclick="obToggleDay(3)" class="ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00] transition-all">Wed</button>
+          <button type="button" id="ob-day-4" onclick="obToggleDay(4)" class="ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00] transition-all">Thu</button>
+          <button type="button" id="ob-day-5" onclick="obToggleDay(5)" class="ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-[#FF6B00] bg-[#FF6B00]/20 text-[#FF6B00] transition-all">Fri</button>
+          <button type="button" id="ob-day-6" onclick="obToggleDay(6)" class="ob-day-btn px-3 py-1.5 rounded-lg text-xs font-bold border border-[#1e3a5f] text-[#94A3B8] transition-all">Sat</button>
+        </div>
+        <p class="text-[#475569] text-xs mt-1.5">Used to calculate your estimated completion date</p>
       </div>
     </div>
     <div class="mt-6 flex gap-3">
