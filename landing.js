@@ -106,11 +106,13 @@ function clearAuthError() {
 function setLoading(loading) {
   const submitBtn = document.getElementById('auth-submit-btn');
   const googleBtn = document.getElementById('btn-google');
-  submitBtn.disabled = loading;
-  googleBtn.disabled = loading;
-  submitBtn.textContent = loading
-    ? 'Please wait...'
-    : (authMode === 'signup' ? 'Create Account' : 'Sign In');
+  if (submitBtn) {
+    submitBtn.disabled = loading;
+    submitBtn.textContent = loading
+      ? 'Please wait...'
+      : (authMode === 'signup' ? 'Create Account' : 'Sign In');
+  }
+  if (googleBtn) googleBtn.disabled = loading;
 }
 
 // Guest access — bypasses Firebase auth, stores under 'guest' key
@@ -158,10 +160,14 @@ async function handleAuthSubmit(e) {
   clearAuthError();
   setLoading(true);
 
+  // Read name before any await — onAuthStateChanged can replace the DOM mid-flight
+  const name = authMode === 'signup'
+    ? ((document.getElementById('auth-name') || {}).value || '').trim()
+    : '';
+
   try {
     if (authMode === 'signup') {
       await firebase.auth().createUserWithEmailAndPassword(email, password);
-      const name = document.getElementById('auth-name').value.trim();
       if (name) {
         await firebase.auth().currentUser.updateProfile({ displayName: name });
       }
@@ -177,17 +183,21 @@ async function handleAuthSubmit(e) {
 
 function friendlyError(code) {
   const map = {
-    'auth/user-not-found':        'No account found with that email.',
-    'auth/wrong-password':        'Incorrect password. Please try again.',
-    'auth/email-already-in-use':  'An account with this email already exists.',
-    'auth/weak-password':         'Password must be at least 6 characters.',
-    'auth/invalid-email':         'Please enter a valid email address.',
-    'auth/popup-closed-by-user':  'Sign-in popup was closed.',
-    'auth/network-request-failed':'Network error. Check your connection.',
-    'auth/too-many-requests':     'Too many attempts. Please try again later.',
-    'auth/invalid-credential':    'Incorrect email or password.',
+    'auth/user-not-found':             'No account found with that email.',
+    'auth/wrong-password':             'Incorrect password. Please try again.',
+    'auth/email-already-in-use':       'An account with this email already exists.',
+    'auth/weak-password':              'Password must be at least 6 characters.',
+    'auth/invalid-email':              'Please enter a valid email address.',
+    'auth/popup-closed-by-user':       'Sign-in popup was closed.',
+    'auth/network-request-failed':     'Network error. Check your connection.',
+    'auth/too-many-requests':          'Too many attempts. Please try again later.',
+    'auth/invalid-credential':         'Incorrect email or password.',
+    'auth/invalid-login-credentials':  'Incorrect email or password.',
+    'auth/missing-password':           'Please enter your password.',
+    'auth/missing-email':              'Please enter your email address.',
+    'auth/user-disabled':              'This account has been disabled.',
   };
-  return map[code] || 'Something went wrong. Please try again.';
+  return map[code] || `Something went wrong. Please try again. (${code})`;
 }
 
 // =====================================================
@@ -203,11 +213,16 @@ window.addEventListener('DOMContentLoaded', () => {
   if (FIREBASE_CONFIGURED) {
     firebase.auth().onAuthStateChanged(user => {
       if (user) {
-        // Swap every "Get Started" CTA to "Open App →"
+        // Swap every "Get Started" CTA to "Open App →".
+        // Clone each element first to strip the smooth-scroll listener that
+        // was already attached to the original — otherwise clicking would
+        // preventDefault() and never navigate.
         document.querySelectorAll('.nav-cta, .btn-hero-primary').forEach(el => {
           if (el.tagName === 'A') {
-            el.href = 'app.html';
-            el.textContent = 'Open App →';
+            const fresh = el.cloneNode(true);
+            fresh.href = 'app.html';
+            fresh.textContent = 'Open App →';
+            el.parentNode.replaceChild(fresh, el);
           }
         });
         // Hide the auth card, show a direct link instead

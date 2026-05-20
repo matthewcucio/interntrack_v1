@@ -63,6 +63,38 @@ function updateNavbarUser() {
   updateMobileNavAvatar();
 }
 
+// =====================================================
+// OFFLINE DETECTION
+// =====================================================
+function initOfflineBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'offline-banner';
+  banner.textContent = 'You are offline — changes will not sync until you reconnect.';
+  Object.assign(banner.style, {
+    display:        'none',
+    position:       'fixed',
+    top:            '0',
+    left:           '0',
+    right:          '0',
+    zIndex:         '9999',
+    background:     '#92400e',
+    color:          '#fef3c7',
+    textAlign:      'center',
+    padding:        '10px 16px',
+    fontSize:       '13px',
+    fontWeight:     '600',
+    letterSpacing:  '0.01em',
+  });
+  document.body.prepend(banner);
+
+  const show = () => { banner.style.display = 'block'; };
+  const hide = () => { banner.style.display = 'none'; };
+
+  if (!navigator.onLine) show();
+  window.addEventListener('offline', show);
+  window.addEventListener('online',  hide);
+}
+
 async function initApp() {
   // Apply saved theme (also set by the inline script in app.html, but set here as fallback)
   const savedTheme = localStorage.getItem('interntrack_theme') || 'dark';
@@ -112,6 +144,31 @@ async function initApp() {
         );
     });
   }
+
+  // Offer to import any hours logged while in guest mode
+  if (FIREBASE_CONFIGURED && currentUser && STORE_KEY !== 'interntrack_data_guest') {
+    const guestRaw = localStorage.getItem('interntrack_data_guest');
+    if (guestRaw) {
+      try {
+        const guestData = JSON.parse(guestRaw);
+        const guestHours = calcRenderedHours(guestData.logs || {});
+        if (guestHours > 0) {
+          const doImport = confirm(
+            `You logged ${guestHours.toFixed(1)} hours as a guest. Import them into your account?`
+          );
+          if (doImport) {
+            const current = loadData() || getData();
+            const merged  = { ...current, logs: { ...(guestData.logs || {}), ...(current.logs || {}) } };
+            localStorage.setItem(STORE_KEY, JSON.stringify(merged));
+            saveToCloud(merged);
+          }
+        }
+      } catch (_) {}
+      localStorage.removeItem('interntrack_data_guest');
+    }
+  }
+
+  initOfflineBanner();
 
   const loading = document.getElementById('auth-loading');
   if (loading) loading.style.display = 'none';
