@@ -491,6 +491,8 @@ let currentView = 'dashboard';
 let calYear, calMonth;
 let multiSelectMode = false;
 let selectedDates   = new Set();
+let _celebrationStats = null;
+let _slideTimer = null;
 
 function showView(view) {
   currentView = view;
@@ -1006,6 +1008,7 @@ function saveBulkLog() {
   const hours = calcHoursFromTimes(ti, to, bulkDlState.lunchIncluded);
 
   const data = getData();
+  const prevRendered = calcRenderedHours(data.logs);
   selectedDates.forEach(dateStr => {
     data.logs[dateStr] = {
       isLeave:       bulkDlState.isLeave,
@@ -1030,6 +1033,7 @@ function saveBulkLog() {
   selectedDates.clear();
   renderCalendar();
   if (currentView === 'dashboard') renderDashboard();
+  checkAndTriggerCompletion(prevRendered, data);
 }
 
 // =====================================================
@@ -1142,6 +1146,7 @@ function saveDayLog() {
   };
 
   const data = getData();
+  const prevRendered = calcRenderedHours(data.logs);
   data.logs[currentDayLogDate] = entry;
   saveData(data);
 
@@ -1155,6 +1160,7 @@ function saveDayLog() {
 
   if (currentView === 'calendar')  renderCalendar();
   if (currentView === 'dashboard') renderDashboard();
+  checkAndTriggerCompletion(prevRendered, data);
 }
 
 function clearDayLog() {
@@ -1535,6 +1541,253 @@ function generateDTR() {
   doc.save(`DTR_${fullName.replace(/\s+/g, '_')}_${monthName}_${year}.pdf`);
   closeDTRModal();
   showToast(`DTR exported for ${monthName} ${year}!`);
+}
+
+// =====================================================
+// COMPLETION CELEBRATION
+// =====================================================
+
+function getCelebrationKey(required) {
+  const uid = currentUser?.uid || 'guest';
+  return `interntrack_cel_${uid}_${required}`;
+}
+
+function checkAndTriggerCompletion(prevRendered, data) {
+  const required = data.settings?.requiredHours || 0;
+  if (required <= 0) return;
+  const newRendered = calcRenderedHours(data.logs);
+  const celKey = getCelebrationKey(required);
+  if (prevRendered < required && newRendered >= required && !localStorage.getItem(celKey)) {
+    localStorage.setItem(celKey, Date.now().toString());
+    const logEntries = Object.entries(data.logs);
+    const loggedDays = logEntries.filter(([, l]) => !l.isLeave && !l.isHoliday && l.hoursRendered > 0).length;
+    const avgHours   = loggedDays > 0 ? parseFloat((newRendered / loggedDays).toFixed(1)) : 0;
+    _celebrationStats = {
+      required,
+      rendered:   parseFloat(newRendered.toFixed(2)),
+      loggedDays,
+      leaveDays:  logEntries.filter(([, l]) => l.isLeave).length,
+      avgTimeIn:  calcAvgTime(data.logs, 'timeIn')  || '--',
+      avgTimeOut: calcAvgTime(data.logs, 'timeOut') || '--',
+      avgHours,
+      company: data.settings.companyName || 'your company',
+      name:    currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Intern',
+    };
+    setTimeout(() => showCompletionCelebration(_celebrationStats), 600);
+  }
+}
+
+function showCompletionCelebration(stats) {
+  const existing = document.getElementById('celebration-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'celebration-overlay';
+  overlay.className = 'cel-overlay';
+
+  const confettiEl = document.createElement('div');
+  confettiEl.id = 'cel-confetti';
+  confettiEl.className = 'cel-confetti';
+  overlay.appendChild(confettiEl);
+
+  const slidesEl = document.createElement('div');
+  slidesEl.id = 'cel-slides';
+  slidesEl.className = 'cel-slides';
+  overlay.appendChild(slidesEl);
+
+  document.body.appendChild(overlay);
+  spawnConfetti(confettiEl);
+
+  setTimeout(() => showSlide(0), 1500);
+}
+
+function showSlide(index) {
+  const stats    = _celebrationStats;
+  const slidesEl = document.getElementById('cel-slides');
+  const confetti = document.getElementById('cel-confetti');
+  if (!slidesEl || !stats) return;
+
+  if (_slideTimer) { clearTimeout(_slideTimer); _slideTimer = null; }
+
+  if (confetti) {
+    confetti.style.transition = index >= 2 ? 'opacity 1s ease' : '';
+    confetti.style.opacity    = index >= 2 ? '0' : '1';
+  }
+
+  const total  = 6;
+  const isLast = index >= total - 1;
+
+  const dots = Array.from({ length: total }, (_, i) =>
+    `<div class="cel-dot${i === index ? ' active' : ''}"></div>`
+  ).join('');
+
+  const progressBar = !isLast
+    ? `<div class="cel-progress-track"><div class="cel-progress-fill" id="cel-progress"></div></div>`
+    : '';
+
+  const skipBtn = !isLast
+    ? `<button class="cel-skip" onclick="event.stopPropagation();showSlide(5)">Skip</button>`
+    : '';
+
+  let content = '';
+  if (index === 0) {
+    content = `
+      <div class="cel-slide cel-bg-dark">
+        <div class="cel-inner">
+          <div class="cel-emoji">🎉</div>
+          <h1 class="cel-title">You Did It!</h1>
+          <p class="cel-sub">${celEsc(stats.name)}'s internship journey</p>
+          <p class="cel-company">@ ${celEsc(stats.company)}</p>
+          <p class="cel-hint">Tap anywhere to continue</p>
+        </div>
+      </div>`;
+  } else if (index === 1) {
+    content = `
+      <div class="cel-slide cel-bg-orange">
+        <div class="cel-inner">
+          <p class="cel-label">You rendered a total of</p>
+          <div class="cel-big"><span class="cel-num" data-count="${stats.rendered}" data-float="1">0</span></div>
+          <p class="cel-unit">hours</p>
+          <p class="cel-tagline">Every minute was worth it ⏱️</p>
+        </div>
+      </div>`;
+  } else if (index === 2) {
+    content = `
+      <div class="cel-slide cel-bg-green">
+        <div class="cel-inner">
+          <p class="cel-label">You showed up</p>
+          <div class="cel-big"><span class="cel-num" data-count="${stats.loggedDays}">0</span></div>
+          <p class="cel-unit">days</p>
+          <p class="cel-tagline">That's real commitment 💪</p>
+        </div>
+      </div>`;
+  } else if (index === 3) {
+    content = `
+      <div class="cel-slide cel-bg-blue">
+        <div class="cel-inner">
+          <p class="cel-label">Your average day</p>
+          <div class="cel-time-row">
+            <span class="cel-time">${celEsc(stats.avgTimeIn)}</span>
+            <span class="cel-arrow">→</span>
+            <span class="cel-time">${celEsc(stats.avgTimeOut)}</span>
+          </div>
+          <p class="cel-tagline">Consistent and professional 🏆</p>
+        </div>
+      </div>`;
+  } else if (index === 4) {
+    content = `
+      <div class="cel-slide cel-bg-purple">
+        <div class="cel-inner">
+          <p class="cel-label">You averaged</p>
+          <div class="cel-big"><span class="cel-num" data-count="${stats.avgHours}" data-float="1">0</span></div>
+          <p class="cel-unit">hours per day</p>
+          <p class="cel-tagline">Going above and beyond ⭐</p>
+        </div>
+      </div>`;
+  } else {
+    content = `
+      <div class="cel-slide cel-bg-final">
+        <div class="cel-inner">
+          <div class="cel-emoji">🎓</div>
+          <h1 class="cel-title">Congratulations!</h1>
+          <p class="cel-sub">${celEsc(stats.name)}, your internship is complete</p>
+          <p class="cel-company">@ ${celEsc(stats.company)}</p>
+          <div class="cel-final-row">
+            <div class="cel-final-stat">
+              <span class="cel-final-num">${stats.rendered}</span>
+              <span class="cel-final-lbl">hrs rendered</span>
+            </div>
+            <div class="cel-final-div"></div>
+            <div class="cel-final-stat">
+              <span class="cel-final-num">${stats.loggedDays}</span>
+              <span class="cel-final-lbl">days logged</span>
+            </div>
+          </div>
+          <button class="cel-btn-dash" id="cel-dash-btn">View Dashboard</button>
+        </div>
+      </div>`;
+  }
+
+  slidesEl.innerHTML = `
+    <div class="cel-tap-zone" id="cel-tap">
+      <div class="cel-nav">
+        <div class="cel-dots">${dots}</div>
+        ${progressBar}
+        ${skipBtn}
+      </div>
+      ${content}
+    </div>`;
+
+  const numEl = slidesEl.querySelector('[data-count]');
+  if (numEl) {
+    const target  = parseFloat(numEl.getAttribute('data-count'));
+    const isFloat = numEl.getAttribute('data-float') === '1';
+    celCountUp(numEl, target, 1200, isFloat);
+  }
+
+  if (!isLast) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const pb = document.getElementById('cel-progress');
+      if (pb) { pb.style.transition = 'width 4s linear'; pb.style.width = '100%'; }
+    }));
+  }
+
+  const tapEl = document.getElementById('cel-tap');
+  if (tapEl) {
+    tapEl.addEventListener('click', e => {
+      if (e.target.closest('.cel-skip') || e.target.closest('.cel-btn-dash')) return;
+      if (index < total - 1) showSlide(index + 1);
+    }, { once: true });
+  }
+
+  const dashBtn = document.getElementById('cel-dash-btn');
+  if (dashBtn) dashBtn.addEventListener('click', closeCelebration);
+
+  if (!isLast) {
+    _slideTimer = setTimeout(() => showSlide(index + 1), 4200);
+  }
+}
+
+function closeCelebration() {
+  if (_slideTimer) { clearTimeout(_slideTimer); _slideTimer = null; }
+  const overlay = document.getElementById('celebration-overlay');
+  if (overlay) {
+    overlay.style.animation = 'celFadeOut 0.5s ease forwards';
+    setTimeout(() => { overlay.remove(); showView('dashboard'); }, 500);
+  } else {
+    showView('dashboard');
+  }
+}
+
+function spawnConfetti(container) {
+  const colors = ['#FF6B00','#22C55E','#3B82F6','#F59E0B','#A855F7','#EC4899','#FFFFFF','#FDE68A'];
+  for (let i = 0; i < 130; i++) {
+    const p      = document.createElement('div');
+    const color  = colors[Math.floor(Math.random() * colors.length)];
+    const size   = Math.random() * 10 + 5;
+    const circle = Math.random() > 0.5;
+    const left   = Math.random() * 100;
+    const delay  = Math.random() * 2.5;
+    const dur    = Math.random() * 2.5 + 2.5;
+    p.style.cssText = `position:absolute;left:${left}%;top:-${Math.random()*30+5}px;width:${circle ? size : size * 0.5}px;height:${size}px;background:${color};border-radius:${circle ? '50%' : '2px'};opacity:0;animation:celConfettiFall ${dur}s ${delay}s ease-in forwards;`;
+    container.appendChild(p);
+  }
+}
+
+function celCountUp(el, target, dur, isFloat) {
+  const start = performance.now();
+  function frame(now) {
+    const t    = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = isFloat ? (ease * target).toFixed(1) : String(Math.floor(ease * target));
+    if (t < 1) requestAnimationFrame(frame);
+    else el.textContent = isFloat ? target.toFixed(1) : String(Math.floor(target));
+  }
+  requestAnimationFrame(frame);
+}
+
+function celEsc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // Also update mobile nav avatar initial when user is known
